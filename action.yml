@@ -1,0 +1,33 @@
+name: 'YC Object Storage Upload'
+description: 'GitHub Action to upload files to Yandex Cloud Object Storage.'
+author: 'Nikolay Matrosov'
+inputs:
+  yc-sa-json-credentials:
+    required: true
+    description: 'Json containing authorized key for Service Account. More info https://cloud.yandex.ru/docs/container-registry/operations/authentication#sa-json'
+  bucket:
+    description: 'Object Storage bucket name for code'
+    default: ''
+    required: true
+  prefix:
+    description: 'Prefix that will added to all keys.'
+    required: false
+    default: ''
+  root:
+    description: 'Path that will considered as root.'
+    required: true
+  include:
+    description: 'Patterns to include. Multiline'
+    default: '*'
+    required: false
+  exclude:
+    description: 'Exclude patterns. Multiline'
+    default: ''
+    required: false
+
+branding:
+  color: blue
+  icon: upload-cloud
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
