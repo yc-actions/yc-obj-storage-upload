@@ -80,7 +80,7 @@ describe('upload', function () {
       bucket: 'bucket',
       prefix: '',
       include: ['./src/*'],
-      exclude: ['*.txt'],
+      exclude: ['**/*.txt'],
       root: '.',
     };
 
