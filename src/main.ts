@@ -82,6 +82,7 @@ const uploadFile = async (
     key = path.join(prefix, key);
   }
   try {
+    core.info(`starting to upload ${key}`);
     const parallelUploads3 = new Upload({
       client,
       params: {
