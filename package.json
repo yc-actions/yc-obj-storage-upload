@@ -35,7 +35,7 @@
     "glob": "^8.1.0",
     "mime-types": "^2.1.35",
     "minimatch": "5.1.4",
-    "minimist": ">=1.2.7"
+    "minimist": ">=1.2.8"
   },
   "devDependencies": {
     "@swc/cli": "^0.1.59",
