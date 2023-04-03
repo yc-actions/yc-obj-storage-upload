@@ -34,7 +34,7 @@
     "@yandex-cloud/nodejs-sdk": "2.4.2",
     "glob": "^8.1.0",
     "mime-types": "^2.1.35",
-    "minimatch": "5.1.6",
+    "minimatch": "8.0.2",
     "minimist": ">=1.2.8"
   },
   "devDependencies": {
