@@ -32,7 +32,7 @@
     "@aws-sdk/lib-storage": "^3.312.0",
     "@grpc/grpc-js": "^1.8.14",
     "@yandex-cloud/nodejs-sdk": "2.4.2",
-    "glob": "^8.1.0",
+    "glob": "^10.2.2",
     "mime-types": "^2.1.35",
     "minimatch": "5.1.6",
     "minimist": ">=1.2.8"
