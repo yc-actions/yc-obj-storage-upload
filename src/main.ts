@@ -12,7 +12,7 @@ import {IamTokenService} from '@yandex-cloud/nodejs-sdk/dist/token-service/iam-t
 import * as fs from 'fs';
 import {glob} from 'glob';
 import mimeTypes from 'mime-types';
-import minimatch from 'minimatch';
+import {minimatch} from 'minimatch';
 import path from 'node:path';
 import {fromServiceAccountJsonFile} from './service-account-json';
 
