@@ -30,7 +30,7 @@
     "@actions/github": "^5.1.1",
     "@aws-sdk/client-s3": "^3.359.0",
     "@aws-sdk/lib-storage": "^3.359.0",
-    "@grpc/grpc-js": "^1.8.15",
+    "@grpc/grpc-js": "^1.8.17",
     "@yandex-cloud/nodejs-sdk": "2.4.4",
     "glob": "^10.3.0",
     "mime-types": "^2.1.35",
