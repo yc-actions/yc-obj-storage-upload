@@ -5,7 +5,7 @@ import {
     S3Client,
 } from '@aws-sdk/client-s3';
 import {Upload} from '@aws-sdk/lib-storage';
-import {HttpRequest} from '@aws-sdk/protocol-http';
+import {HttpRequest} from '@smithy/protocol-http';
 import {type FinalizeRequestMiddleware} from '@aws-sdk/types/dist-types/middleware';
 
 import {IamTokenService} from '@yandex-cloud/nodejs-sdk/dist/token-service/iam-token-service';
