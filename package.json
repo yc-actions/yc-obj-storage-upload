@@ -31,7 +31,7 @@
     "@aws-sdk/client-s3": "^3.433.0",
     "@aws-sdk/lib-storage": "^3.454.0",
     "@grpc/grpc-js": "^1.9.11",
-    "@smithy/protocol-http": "^3.0.7",
+    "@smithy/protocol-http": "^3.0.10",
     "@yandex-cloud/nodejs-sdk": "^2.6.0",
     "glob": "^10.3.10",
     "mime-types": "^2.1.35",
