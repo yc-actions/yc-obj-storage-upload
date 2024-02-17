@@ -17,7 +17,7 @@ The action uploads files from the given folder to Yandex Cloud Object Storage us
 ```yaml
     - name: Upload files to Object Storage
       id: s3-upload
-      uses: yc-actions/yc-obj-storage-upload@v1
+      uses: yc-actions/yc-obj-storage-upload@v2
       with:
         yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
         bucket: ${{ secrets.BUCKET }}
