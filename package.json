@@ -38,7 +38,7 @@
     "@aws-sdk/lib-storage": "^3.515.0",
     "@grpc/grpc-js": "^1.10.1",
     "@smithy/protocol-http": "^3.2.2",
-    "@yandex-cloud/nodejs-sdk": "^2.6.1",
+    "@yandex-cloud/nodejs-sdk": "^2.7.1",
     "glob": "^10.3.10",
     "mime-types": "^2.1.35",
     "minimatch": "9.0.3",
