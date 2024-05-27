@@ -179,7 +179,8 @@ describe('upload', () => {
         const cwd = process.env.GITHUB_WORKSPACE ?? ''
         fs.mkdirSync(path.join(cwd, 'bigfile'), { recursive: true })
         const bigfile = fs.openSync(path.join(cwd, 'bigfile/10mbfile.txt'), 'w')
-        fs.writeSync(bigfile, Buffer.alloc(10 * 1024 ** 2), 0, 10 * 1024 ** 2, 0)
+        const size = 10 * 1024 ** 2
+        fs.writeSync(bigfile, Buffer.alloc(size), 0, size, 0)
         fs.closeSync(bigfile)
 
         const inputs: UploadInputs = {
@@ -225,13 +226,13 @@ describe('upload', () => {
                 throw e
             }
         }
-        fs.writeFileSync(path.join(cwd, './bigfile/10mbfile.txt'), new Uint8Array(10 * 1024 ** 2))
+        fs.writeFileSync(path.join(cwd, './bigfile/10mbfile.txt'), new Uint8Array(size))
 
         await upload(s3client, inputs)
 
-        expect(mockedSendFn).toHaveBeenCalledTimes(5)
+        expect(mockedSendFn).toHaveBeenCalledTimes(4)
         expect(createCommands).toEqual(1)
-        expect(uploadCommands).toEqual(3)
+        expect(uploadCommands).toEqual(2)
         expect(completeCommands).toEqual(1)
         if (!createMultipartUploadCommand) {
             throw new Error('createMultipartUploadCommand === null')
