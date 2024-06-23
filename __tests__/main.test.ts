@@ -1,6 +1,9 @@
 import {
     CompleteMultipartUploadCommand,
     CreateMultipartUploadCommand,
+    DeleteObjectsCommand,
+    ListObjectsV2Command,
+    ListObjectsV2Output,
     PutObjectCommand,
     S3Client,
     UploadPartCommand
@@ -9,7 +12,7 @@ import { expect, test } from '@jest/globals'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as process from 'process'
-import { run, upload, UploadInputs } from '../src/main'
+import { clearBucket, run, upload, UploadInputs } from '../src/main'
 import * as core from '@actions/core'
 
 const strCompare = (a: string | undefined, b: string | undefined): number => {
@@ -29,7 +32,8 @@ const requiredInputs: Record<string, string> = {
     "public_key": "public_key"
   }`,
     bucket: 'bucket',
-    root: '.'
+    root: '.',
+    clear: 'false'
 }
 
 describe('upload', () => {
@@ -38,6 +42,85 @@ describe('upload', () => {
 
     beforeEach(() => {
         mockedSendFn.mockReset()
+    })
+
+    test('it should clear bucket', async () => {
+        mockedSendFn.mockImplementation(async cmd => {
+            if (cmd instanceof ListObjectsV2Command) {
+                const output: ListObjectsV2Output = {
+                    Contents: [
+                        {
+                            Key: 'src/func.js'
+                        }
+                    ],
+                    IsTruncated: false
+                }
+                return Promise.resolve(output)
+            }
+            return Promise.resolve({})
+        })
+        await clearBucket(s3client, 'bucket')
+
+        const expected = [expect.any(ListObjectsV2Command), expect.any(DeleteObjectsCommand)]
+
+        for (let i = 0; i < expected.length; i++) {
+            expect(mockedSendFn).toHaveBeenNthCalledWith(i + 1, expected[i])
+        }
+    })
+
+    test('it should clear bucket with a lot objects', async () => {
+        const listCommnds: ListObjectsV2Output[] = [
+            {
+                Contents: [
+                    {
+                        Key: 'src/func.js'
+                    }
+                ],
+                IsTruncated: true,
+                NextContinuationToken: 'token'
+            },
+            {
+                Contents: [
+                    {
+                        Key: 'src/func.js'
+                    }
+                ],
+                IsTruncated: true,
+                NextContinuationToken: 'token'
+            },
+            {
+                Contents: [
+                    {
+                        Key: 'src/func.js'
+                    }
+                ],
+                IsTruncated: false
+            }
+        ]
+        let listCommandIndex = 0
+        mockedSendFn.mockImplementation(async cmd => {
+            if (cmd instanceof ListObjectsV2Command) {
+                const output = listCommnds[listCommandIndex]
+                listCommandIndex += 1
+                return Promise.resolve(output)
+            }
+            return Promise.resolve({})
+        })
+        await clearBucket(s3client, 'bucket')
+
+        const expected = [
+            expect.any(ListObjectsV2Command),
+            expect.any(DeleteObjectsCommand),
+            expect.any(ListObjectsV2Command),
+            expect.any(DeleteObjectsCommand),
+            expect.any(ListObjectsV2Command),
+            expect.any(DeleteObjectsCommand)
+        ]
+
+        for (let i = 0; i < expected.length; i++) {
+            expect(mockedSendFn).toHaveBeenNthCalledWith(i + 1, expected[i])
+        }
+        expect(mockedSendFn).toHaveBeenCalledTimes(expected.length)
     })
 
     test('it should add files from include', async () => {
@@ -246,6 +329,7 @@ describe('upload', () => {
 describe('run', () => {
     // Mock the GitHub Actions core library
     let getInputMock: jest.SpyInstance
+    let getBooleanInputMock: jest.SpyInstance
     let setFailedMock: jest.SpyInstance
 
     const s3client = new S3Client({})
@@ -254,7 +338,12 @@ describe('run', () => {
     beforeEach(() => {
         jest.clearAllMocks()
         getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
+        getBooleanInputMock = jest.spyOn(core, 'getBooleanInput').mockImplementation()
         setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
+
+        getBooleanInputMock.mockImplementation((): boolean => {
+            return false
+        })
 
         mockedSendFn.mockReset()
     })

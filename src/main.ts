@@ -2,6 +2,8 @@ import * as core from '@actions/core'
 import {
     type AbortMultipartUploadCommandOutput,
     type CompleteMultipartUploadCommandOutput,
+    DeleteObjectsCommand,
+    ListObjectsV2Command,
     S3Client
 } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
@@ -22,6 +24,7 @@ type ActionInputs = {
     root: string
     include: string[]
     exclude: string[]
+    clear: boolean
 }
 
 export async function run(): Promise<void> {
@@ -38,7 +41,8 @@ export async function run(): Promise<void> {
             prefix: core.getInput('prefix', { required: false }),
             root: core.getInput('root', { required: true }),
             include: core.getMultilineInput('include', { required: false }),
-            exclude: core.getMultilineInput('exclude', { required: false })
+            exclude: core.getMultilineInput('exclude', { required: false }),
+            clear: core.getBooleanInput('clear', { required: false })
         }
 
         // Initialize Token service with your SA credentials
@@ -68,7 +72,9 @@ export async function run(): Promise<void> {
             toMiddleware: 'retryMiddleware',
             override: true
         })
-
+        if (inputs.clear) {
+            await clearBucket(s3Client, inputs.bucket)
+        }
         await upload(s3Client, inputs)
     } catch (error) {
         if (error instanceof Error) {
@@ -170,4 +176,40 @@ function parseIgnoreGlobPatterns(patterns: string[]): string[] {
 
     core.info(`Source ignore pattern: "${JSON.stringify(result)}"`)
     return result
+}
+
+export async function clearBucket(client: S3Client, bucket: string): Promise<void> {
+    core.info('Clearing bucket')
+    const listCommand = new ListObjectsV2Command({
+        Bucket: bucket,
+        // The default and maximum number of keys returned is 1000.
+        MaxKeys: 1000
+    })
+
+    let isTruncated = true
+    let totalDeleted = 0
+
+    while (isTruncated) {
+        const { Contents, IsTruncated, NextContinuationToken } = await client.send(listCommand)
+
+        if (!Contents || Contents.length === 0) {
+            break
+        }
+
+        isTruncated = Boolean(IsTruncated)
+        listCommand.input.ContinuationToken = NextContinuationToken
+
+        const deleteCommand = new DeleteObjectsCommand({
+            Bucket: bucket,
+            Delete: {
+                Objects: Contents.map(c => ({ Key: c.Key }))
+            }
+        })
+
+        const { Deleted } = await client.send(deleteCommand)
+
+        totalDeleted += Deleted?.length ?? 0
+    }
+
+    core.info(`Deleted ${totalDeleted} objects from bucket ${bucket}`)
 }
