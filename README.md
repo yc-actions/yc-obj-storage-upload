@@ -1,5 +1,8 @@
 ## GitHub Action to upload files to Yandex Cloud Object Storage.
 
+[![Coverage](./badges/coverage.svg)](./badges/coverage.svg)
+
+
 The action uploads files from the given folder to Yandex Cloud Object Storage using Service Account Key as authorizations method.
 
 **Table of Contents**
