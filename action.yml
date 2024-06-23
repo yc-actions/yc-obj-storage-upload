@@ -24,6 +24,10 @@ inputs:
     description: 'Exclude patterns. Multiline'
     default: ''
     required: false
+  clear:
+    description: 'Clear bucket before upload.'
+    default: 'false'
+    required: false
 
 branding:
   color: blue
