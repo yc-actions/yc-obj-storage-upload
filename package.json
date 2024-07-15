@@ -76,7 +76,7 @@
     ]
   },
   "devDependencies": {
-    "@swc/cli": "^0.3.14",
+    "@swc/cli": "^0.4.0",
     "@swc/core": "^1.6.13",
     "@swc/jest": "^0.2.36",
     "@types/archiver": "^6.0.2",
