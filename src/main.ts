@@ -64,7 +64,8 @@ export async function run(): Promise<void> {
             }
         }
 
-        s3Client.middlewareStack.removeByTag('AWSAUTH')
+        s3Client.middlewareStack.removeByTag('HTTP_AUTH_SCHEME')
+        s3Client.middlewareStack.removeByTag('HTTP_SIGNING')
         s3Client.middlewareStack.addRelativeTo(middleware, {
             name: 'ycAuthMiddleware',
             tags: ['YCAUTH'],
