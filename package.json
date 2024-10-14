@@ -81,7 +81,7 @@
     "@swc/core": "^1.7.26",
     "@swc/jest": "^0.2.36",
     "@types/archiver": "^6.0.2",
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^29.5.13",
     "@types/mime-types": "^2.1.4",
     "@types/mustache": "^4.2.5",
     "@types/node": "22.5.5",
