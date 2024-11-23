@@ -28,6 +28,10 @@ inputs:
     description: 'Clear bucket before upload.'
     default: 'false'
     required: false
+  cache-control:
+    description: 'Cache-Control header value. Multiline. Path mapped to value.'
+    default: ''
+    required: false
 
 branding:
   color: blue

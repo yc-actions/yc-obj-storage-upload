@@ -14,6 +14,7 @@ import * as path from 'path'
 import * as process from 'process'
 import { clearBucket, run, upload, UploadInputs } from '../src/main'
 import * as core from '@actions/core'
+import { newCacheControlConfig } from '../src/cache-control'
 
 const strCompare = (a: string | undefined, b: string | undefined): number => {
     if (!a || !b) {
@@ -129,7 +130,8 @@ describe('upload', () => {
             prefix: '',
             include: ['./src/*'],
             exclude: [],
-            root: '.'
+            root: '.',
+            cacheControl: newCacheControlConfig()
         }
 
         await upload(s3client, inputs)
@@ -145,7 +147,8 @@ describe('upload', () => {
             prefix: '',
             include: ['./src/*.js'],
             exclude: [],
-            root: '.'
+            root: '.',
+            cacheControl: newCacheControlConfig()
         }
 
         await upload(s3client, inputs)
@@ -161,7 +164,8 @@ describe('upload', () => {
             prefix: '',
             include: ['./src/*'],
             exclude: ['**/*.txt'],
-            root: '.'
+            root: '.',
+            cacheControl: newCacheControlConfig()
         }
 
         await upload(s3client, inputs)
@@ -177,7 +181,8 @@ describe('upload', () => {
             prefix: '',
             include: ['*'],
             exclude: [],
-            root: './src'
+            root: './src',
+            cacheControl: newCacheControlConfig()
         }
 
         await upload(s3client, inputs)
@@ -193,7 +198,8 @@ describe('upload', () => {
             prefix: '',
             include: ['src'],
             exclude: [],
-            root: '.'
+            root: '.',
+            cacheControl: newCacheControlConfig()
         }
 
         await upload(s3client, inputs)
@@ -209,7 +215,8 @@ describe('upload', () => {
             prefix: '',
             include: ['src_with_subfolders/**'],
             exclude: [],
-            root: '.'
+            root: '.',
+            cacheControl: newCacheControlConfig()
         }
 
         await upload(s3client, inputs)
@@ -230,7 +237,8 @@ describe('upload', () => {
             prefix: '',
             include: ['*.js'],
             exclude: [],
-            root: './src'
+            root: './src',
+            cacheControl: newCacheControlConfig()
         }
 
         await upload(s3client, inputs)
@@ -246,7 +254,8 @@ describe('upload', () => {
             prefix: 'prefix/',
             include: ['*.js'],
             exclude: [],
-            root: './src'
+            root: './src',
+            cacheControl: newCacheControlConfig()
         }
 
         await upload(s3client, inputs)
@@ -271,7 +280,8 @@ describe('upload', () => {
             prefix: '',
             include: ['10mbfile.txt'],
             exclude: [],
-            root: './bigfile'
+            root: './bigfile',
+            cacheControl: newCacheControlConfig()
         }
         let createCommands = 0
         let uploadCommands = 0

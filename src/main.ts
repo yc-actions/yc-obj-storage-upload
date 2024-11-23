@@ -17,6 +17,7 @@ import mimeTypes from 'mime-types'
 import { minimatch } from 'minimatch'
 import path from 'node:path'
 import { fromServiceAccountJsonFile } from './service-account-json'
+import { CacheControlConfig, getCacheControlValue, parseCacheControlFormats } from './cache-control'
 
 type ActionInputs = {
     bucket: string
@@ -25,6 +26,7 @@ type ActionInputs = {
     include: string[]
     exclude: string[]
     clear: boolean
+    cacheControl: CacheControlConfig
 }
 
 export async function run(): Promise<void> {
@@ -42,7 +44,8 @@ export async function run(): Promise<void> {
             root: core.getInput('root', { required: true }),
             include: core.getMultilineInput('include', { required: false }),
             exclude: core.getMultilineInput('exclude', { required: false }),
-            clear: core.getBooleanInput('clear', { required: false })
+            clear: core.getBooleanInput('clear', { required: false }),
+            cacheControl: parseCacheControlFormats(core.getMultilineInput('cache-control', { required: false }))
         }
 
         // Initialize Token service with your SA credentials
@@ -90,12 +93,13 @@ export interface UploadInputs {
     root: string
     prefix: string
     bucket: string
+    cacheControl: CacheControlConfig
 }
 
 const uploadFile = async (
     client: S3Client,
     filePath: string,
-    { root, bucket, prefix }: UploadInputs
+    { root, bucket, prefix, cacheControl }: UploadInputs
 ): Promise<CompleteMultipartUploadCommandOutput | AbortMultipartUploadCommandOutput | undefined> => {
     const stat = fs.statSync(filePath)
     if (stat.isDirectory()) {
@@ -115,7 +119,8 @@ const uploadFile = async (
                 Bucket: bucket,
                 Key: key,
                 Body: fs.createReadStream(filePath),
-                ContentType: contentType
+                ContentType: contentType,
+                CacheControl: getCacheControlValue(cacheControl, key)
             },
             queueSize: 4,
             leavePartsOnError: false
