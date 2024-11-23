@@ -98,5 +98,19 @@ describe('Cache-Control', () => {
 
             expect(result).toEqual('default-value')
         })
+
+        it('should match long path', () => {
+            const cacheControl = {
+                mapping: new Map([
+                    ['*.html', 'html-value'],
+                    ['*.css', 'css-value']
+                ]),
+                default: 'default-value'
+            }
+            const key = 'path/to/file.html'
+            const result = getCacheControlValue(cacheControl, key)
+
+            expect(result).toEqual('html-value')
+        })
     })
 })

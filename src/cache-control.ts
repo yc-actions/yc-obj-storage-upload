@@ -41,7 +41,7 @@ export function parseCacheControlFormats(formats: string[]): CacheControlConfig 
 
 export function getCacheControlValue(cacheControl: CacheControlConfig, key: string): string | undefined {
     for (const [pattern, value] of cacheControl.mapping) {
-        if (minimatch.match([key], pattern).length > 0) {
+        if (minimatch.match([key], pattern, { matchBase: true }).length > 0) {
             return value
         }
     }
