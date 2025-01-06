@@ -1,4 +1,15 @@
-import * as core from '@actions/core'
+import {
+    getInput,
+    setSecret,
+    getMultilineInput,
+    getBooleanInput,
+    setFailed,
+    info,
+    error,
+    startGroup,
+    debug,
+    endGroup
+} from '@actions/core'
 import {
     type AbortMultipartUploadCommandOutput,
     type CompleteMultipartUploadCommandOutput,
@@ -11,7 +22,7 @@ import { HttpRequest } from '@smithy/protocol-http'
 import { type FinalizeRequestMiddleware } from '@aws-sdk/types/dist-types/middleware'
 
 import { IamTokenService } from '@yandex-cloud/nodejs-sdk/dist/token-service/iam-token-service'
-import * as fs from 'fs'
+import { statSync, createReadStream } from 'fs'
 import { glob } from 'glob'
 import mimeTypes from 'mime-types'
 import { minimatch } from 'minimatch'
@@ -31,21 +42,21 @@ type ActionInputs = {
 
 export async function run(): Promise<void> {
     try {
-        const ycSaJsonCredentials = core.getInput('yc-sa-json-credentials', {
+        const ycSaJsonCredentials = getInput('yc-sa-json-credentials', {
             required: true
         })
-        core.setSecret(ycSaJsonCredentials)
+        setSecret(ycSaJsonCredentials)
 
         const serviceAccountJson = fromServiceAccountJsonFile(JSON.parse(ycSaJsonCredentials))
 
         const inputs: ActionInputs = {
-            bucket: core.getInput('bucket', { required: true }),
-            prefix: core.getInput('prefix', { required: false }),
-            root: core.getInput('root', { required: true }),
-            include: core.getMultilineInput('include', { required: false }),
-            exclude: core.getMultilineInput('exclude', { required: false }),
-            clear: core.getBooleanInput('clear', { required: false }),
-            cacheControl: parseCacheControlFormats(core.getMultilineInput('cache-control', { required: false }))
+            bucket: getInput('bucket', { required: true }),
+            prefix: getInput('prefix', { required: false }),
+            root: getInput('root', { required: true }),
+            include: getMultilineInput('include', { required: false }),
+            exclude: getMultilineInput('exclude', { required: false }),
+            clear: getBooleanInput('clear', { required: false }),
+            cacheControl: parseCacheControlFormats(getMultilineInput('cache-control', { required: false }))
         }
 
         // Initialize Token service with your SA credentials
@@ -80,9 +91,9 @@ export async function run(): Promise<void> {
             await clearBucket(s3Client, inputs.bucket)
         }
         await upload(s3Client, inputs)
-    } catch (error) {
-        if (error instanceof Error) {
-            core.setFailed(error.message)
+    } catch (err) {
+        if (err instanceof Error) {
+            setFailed(err.message)
         }
     }
 }
@@ -101,7 +112,7 @@ const uploadFile = async (
     filePath: string,
     { root, bucket, prefix, cacheControl }: UploadInputs
 ): Promise<CompleteMultipartUploadCommandOutput | AbortMultipartUploadCommandOutput | undefined> => {
-    const stat = fs.statSync(filePath)
+    const stat = statSync(filePath)
     if (stat.isDirectory()) {
         return
     }
@@ -112,13 +123,13 @@ const uploadFile = async (
         key = path.join(prefix, key)
     }
     try {
-        core.info(`starting to upload ${key}`)
+        info(`starting to upload ${key}`)
         const parallelUploads3 = new Upload({
             client,
             params: {
                 Bucket: bucket,
                 Key: key,
-                Body: fs.createReadStream(filePath),
+                Body: createReadStream(filePath),
                 ContentType: contentType,
                 CacheControl: getCacheControlValue(cacheControl, key)
             },
@@ -128,15 +139,15 @@ const uploadFile = async (
 
         return await parallelUploads3.done()
     } catch (e) {
-        core.error(`${e}`)
+        error(`${e}`)
     }
 }
 
 export async function upload(s3Client: S3Client, inputs: UploadInputs): Promise<void> {
-    core.startGroup('Upload')
+    startGroup('Upload')
 
     try {
-        core.info('Upload start')
+        info('Upload start')
 
         const workspace = process.env['GITHUB_WORKSPACE'] ?? ''
         const patterns = parseIgnoreGlobPatterns(inputs.exclude)
@@ -146,12 +157,12 @@ export async function upload(s3Client: S3Client, inputs: UploadInputs): Promise<
             let pathFromSourceRoot = path.join(root, include)
             if (!pathFromSourceRoot.includes('*')) {
                 try {
-                    const stat = fs.statSync(pathFromSourceRoot)
+                    const stat = statSync(pathFromSourceRoot)
                     if (stat.isDirectory()) {
                         pathFromSourceRoot = path.join(pathFromSourceRoot, '*')
                     }
                 } catch (e) {
-                    core.debug(`${e}`)
+                    debug(`${e}`)
                 }
             }
             const matches = glob.sync(pathFromSourceRoot, { absolute: false })
@@ -166,7 +177,7 @@ export async function upload(s3Client: S3Client, inputs: UploadInputs): Promise<
             }
         }
     } finally {
-        core.endGroup()
+        endGroup()
     }
 }
 
@@ -180,12 +191,12 @@ function parseIgnoreGlobPatterns(patterns: string[]): string[] {
         }
     }
 
-    core.info(`Source ignore pattern: "${JSON.stringify(result)}"`)
+    info(`Source ignore pattern: "${JSON.stringify(result)}"`)
     return result
 }
 
 export async function clearBucket(client: S3Client, bucket: string): Promise<void> {
-    core.info('Clearing bucket')
+    info('Clearing bucket')
     const listCommand = new ListObjectsV2Command({
         Bucket: bucket,
         // The default and maximum number of keys returned is 1000.
@@ -217,5 +228,5 @@ export async function clearBucket(client: S3Client, bucket: string): Promise<voi
         totalDeleted += Deleted?.length ?? 0
     }
 
-    core.info(`Deleted ${totalDeleted} objects from bucket ${bucket}`)
+    info(`Deleted ${totalDeleted} objects from bucket ${bucket}`)
 }
