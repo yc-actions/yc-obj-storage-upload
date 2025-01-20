@@ -9,10 +9,11 @@ import {
     UploadPartCommand
 } from '@aws-sdk/client-s3'
 import { expect, test } from '@jest/globals'
-import * as fs from 'fs'
-import * as path from 'path'
-import * as process from 'process'
+import { closeSync, mkdirSync, openSync, rmdirSync, writeFileSync, writeSync } from 'fs'
+import { join } from 'path'
+import { env } from 'process'
 import { clearBucket, run, upload, UploadInputs } from '../src/main'
+// eslint-disable-next-line importPlugin/no-namespace
 import * as core from '@actions/core'
 import { newCacheControlConfig } from '../src/cache-control'
 
@@ -268,12 +269,12 @@ describe('upload', () => {
     jest.setTimeout(600_000)
     test('it should use multipart on big files', async () => {
         // generate a 10mb file
-        const cwd = process.env.GITHUB_WORKSPACE ?? ''
-        fs.mkdirSync(path.join(cwd, 'bigfile'), { recursive: true })
-        const bigfile = fs.openSync(path.join(cwd, 'bigfile/10mbfile.txt'), 'w')
+        const cwd = env.GITHUB_WORKSPACE ?? ''
+        mkdirSync(join(cwd, 'bigfile'), { recursive: true })
+        const bigfile = openSync(join(cwd, 'bigfile/10mbfile.txt'), 'w')
         const size = 10 * 1024 ** 2
-        fs.writeSync(bigfile, Buffer.alloc(size), 0, size, 0)
-        fs.closeSync(bigfile)
+        writeSync(bigfile, Buffer.alloc(size), 0, size, 0)
+        closeSync(bigfile)
 
         const inputs: UploadInputs = {
             bucket: 'bucket',
@@ -312,14 +313,15 @@ describe('upload', () => {
         })
 
         try {
-            fs.mkdirSync(path.join(cwd, './bigfile'))
+            mkdirSync(join(cwd, './bigfile'))
         } catch (e: unknown) {
             if (e instanceof Error && 'code' in e && e.code !== 'EEXIST') {
+                // eslint-disable-next-line no-console
                 console.log(e)
                 throw e
             }
         }
-        fs.writeFileSync(path.join(cwd, './bigfile/10mbfile.txt'), new Uint8Array(size))
+        writeFileSync(join(cwd, './bigfile/10mbfile.txt'), new Uint8Array(size))
 
         await upload(s3client, inputs)
 
@@ -332,7 +334,7 @@ describe('upload', () => {
         }
         expect(createMultipartUploadCommand.input.Key).toEqual('10mbfile.txt')
 
-        fs.rmdirSync(path.join(cwd, './bigfile'), { recursive: true })
+        rmdirSync(join(cwd, './bigfile'), { recursive: true })
     })
 })
 
