@@ -1,14 +1,14 @@
 import {
-    getInput,
-    setSecret,
-    getMultilineInput,
-    getBooleanInput,
-    setFailed,
-    info,
-    error,
-    startGroup,
     debug,
-    endGroup
+    endGroup,
+    error,
+    getBooleanInput,
+    getInput,
+    getMultilineInput,
+    info,
+    setFailed,
+    setSecret,
+    startGroup
 } from '@actions/core'
 import {
     type AbortMultipartUploadCommandOutput,
@@ -22,13 +22,14 @@ import { HttpRequest } from '@smithy/protocol-http'
 import { type FinalizeRequestMiddleware } from '@aws-sdk/types/dist-types/middleware'
 
 import { IamTokenService } from '@yandex-cloud/nodejs-sdk/dist/token-service/iam-token-service'
-import { statSync, createReadStream } from 'fs'
+import { createReadStream, statSync } from 'fs'
 import { glob } from 'glob'
 import mimeTypes from 'mime-types'
 import { minimatch } from 'minimatch'
 import path from 'node:path'
 import { fromServiceAccountJsonFile } from './service-account-json'
 import { CacheControlConfig, getCacheControlValue, parseCacheControlFormats } from './cache-control'
+import { RequestChecksumCalculation, ResponseChecksumValidation } from '@aws-sdk/middleware-flexible-checksums'
 
 type ActionInputs = {
     bucket: string
@@ -64,7 +65,9 @@ export async function run(): Promise<void> {
 
         const s3Client = new S3Client({
             region: 'ru-central1',
-            endpoint: 'https://storage.yandexcloud.net'
+            endpoint: 'https://storage.yandexcloud.net',
+            requestChecksumCalculation: RequestChecksumCalculation.WHEN_REQUIRED,
+            responseChecksumValidation: ResponseChecksumValidation.WHEN_REQUIRED
         })
 
         // eslint-disable-next-line  @typescript-eslint/no-explicit-any
