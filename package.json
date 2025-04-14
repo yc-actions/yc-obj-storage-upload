@@ -36,7 +36,7 @@
     "@actions/github": "^6.0.0",
     "@aws-sdk/client-s3": "^3.782.0",
     "@aws-sdk/lib-storage": "^3.782.0",
-    "@grpc/grpc-js": "^1.13.2",
+    "@grpc/grpc-js": "^1.13.3",
     "@smithy/protocol-http": "^5.1.0",
     "@yandex-cloud/nodejs-sdk": "^2.8.0",
     "glob": "^11.0.1",
