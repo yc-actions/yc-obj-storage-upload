@@ -3,11 +3,11 @@ import {
     endGroup,
     error,
     getBooleanInput,
+    getIDToken,
     getInput,
     getMultilineInput,
     info,
     setFailed,
-    setSecret,
     startGroup
 } from '@actions/core'
 import {
@@ -30,6 +30,8 @@ import path from 'node:path'
 import { fromServiceAccountJsonFile } from './service-account-json'
 import { CacheControlConfig, getCacheControlValue, parseCacheControlFormats } from './cache-control'
 import { RequestChecksumCalculation, ResponseChecksumValidation } from '@aws-sdk/middleware-flexible-checksums'
+import { SessionConfig, TokenService } from '@yandex-cloud/nodejs-sdk/dist/types'
+import axios from 'axios'
 
 type ActionInputs = {
     bucket: string
@@ -43,12 +45,27 @@ type ActionInputs = {
 
 export async function run(): Promise<void> {
     try {
-        const ycSaJsonCredentials = getInput('yc-sa-json-credentials', {
-            required: true
-        })
-        setSecret(ycSaJsonCredentials)
-
-        const serviceAccountJson = fromServiceAccountJsonFile(JSON.parse(ycSaJsonCredentials))
+        let sessionConfig: SessionConfig = {}
+        const ycSaJsonCredentials = getInput('yc-sa-json-credentials')
+        const ycIamToken = getInput('yc-iam-token')
+        const ycSaId = getInput('yc-sa-id')
+        if (ycSaJsonCredentials !== '') {
+            const serviceAccountJson = fromServiceAccountJsonFile(JSON.parse(ycSaJsonCredentials))
+            info('Parsed Service account JSON')
+            sessionConfig = { serviceAccountJson }
+        } else if (ycIamToken !== '') {
+            sessionConfig = { iamToken: ycIamToken }
+            info('Using IAM token')
+        } else if (ycSaId !== '') {
+            const ghToken = await getIDToken()
+            if (!ghToken) {
+                throw new Error('No credentials provided')
+            }
+            const saToken = await exchangeToken(ghToken, ycSaId)
+            sessionConfig = { iamToken: saToken }
+        } else {
+            throw new Error('No credentials')
+        }
 
         const inputs: ActionInputs = {
             bucket: getInput('bucket', { required: true }),
@@ -61,7 +78,20 @@ export async function run(): Promise<void> {
         }
 
         // Initialize Token service with your SA credentials
-        const tokenService = new IamTokenService(serviceAccountJson)
+        let tokenService: TokenService
+        if ('serviceAccountJson' in sessionConfig) {
+            tokenService = new IamTokenService(sessionConfig.serviceAccountJson)
+        } else {
+            tokenService = {
+                getToken: async () => {
+                    const iamToken = sessionConfig.iamToken
+                    if (!iamToken) {
+                        throw new Error('No IAM token provided')
+                    }
+                    return iamToken
+                }
+            }
+        }
 
         const s3Client = new S3Client({
             region: 'ru-central1',
@@ -232,4 +262,31 @@ export async function clearBucket(client: S3Client, bucket: string): Promise<voi
     }
 
     info(`Deleted ${totalDeleted} objects from bucket ${bucket}`)
+}
+
+async function exchangeToken(token: string, saId: string): Promise<string> {
+    info(`Exchanging token for service account ${saId}`)
+    const res = await axios.post(
+        'https://auth.yandex.cloud/oauth/token',
+        {
+            grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+            requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+            audience: saId,
+            subject_token: token,
+            subject_token_type: 'urn:ietf:params:oauth:token-type:id_token'
+        },
+        {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        }
+    )
+    if (res.status !== 200) {
+        throw new Error(`Failed to exchange token: ${res.status} ${res.statusText}`)
+    }
+    if (!res.data.access_token) {
+        throw new Error(`Failed to exchange token: ${res.data.error} ${res.data.error_description}`)
+    }
+    info(`Token exchanged successfully`)
+    return res.data.access_token
 }
