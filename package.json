@@ -78,7 +78,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
-    "@eslint/js": "^9.26.0",
+    "@eslint/js": "^9.27.0",
     "@stylistic/eslint-plugin-ts": "^4.2.0",
     "@swc/cli": "^0.7.5",
     "@swc/core": "^1.11.24",
