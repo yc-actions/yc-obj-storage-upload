@@ -75,7 +75,7 @@
     "minimatch": "10.0.3",
     "minimist": ">=1.2.8",
     "path-scurry": "^2.0.0",
-    "axios": "^1.10.0"
+    "axios": "^1.11.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
