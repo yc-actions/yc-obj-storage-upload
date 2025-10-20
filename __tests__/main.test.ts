@@ -389,4 +389,267 @@ describe('run', () => {
         await run()
         expect(setFailedMock).not.toHaveBeenCalled()
     })
+
+    test('it should use yc-iam-token when provided', async () => {
+        getInputMock.mockImplementation((name: string, options): string => {
+            const inputs: Record<string, string> = {
+                ...requiredInputs,
+                'yc-sa-json-credentials': '',
+                'yc-iam-token': 'test-iam-token'
+            }
+
+            const val = inputs[name]
+            if (options && options.required && !val) {
+                throw new Error(`Input required and not supplied: ${name}`)
+            }
+
+            return val ?? ''
+        })
+        await run()
+        expect(setFailedMock).not.toHaveBeenCalled()
+    })
+
+    test('it should use yc-sa-id with OIDC token', async () => {
+        const getIDTokenMock = jest.spyOn(core, 'getIDToken').mockResolvedValue('github-token')
+        const axiosMock = jest.spyOn(require('axios'), 'post').mockResolvedValue({
+            status: 200,
+            data: { access_token: 'exchanged-token' }
+        })
+
+        getInputMock.mockImplementation((name: string, options): string => {
+            const inputs: Record<string, string> = {
+                ...requiredInputs,
+                'yc-sa-json-credentials': '',
+                'yc-sa-id': 'test-sa-id'
+            }
+
+            const val = inputs[name]
+            if (options && options.required && !val) {
+                throw new Error(`Input required and not supplied: ${name}`)
+            }
+
+            return val ?? ''
+        })
+
+        await run()
+        expect(setFailedMock).not.toHaveBeenCalled()
+        expect(axiosMock).toHaveBeenCalledWith(
+            'https://auth.yandex.cloud/oauth/token',
+            expect.objectContaining({
+                audience: 'test-sa-id',
+                subject_token: 'github-token'
+            }),
+            expect.any(Object)
+        )
+
+        getIDTokenMock.mockRestore()
+        axiosMock.mockRestore()
+    })
+
+    test('it should fail when no credentials provided', async () => {
+        getInputMock.mockImplementation((name: string, options): string => {
+            const inputs: Record<string, string> = {
+                ...requiredInputs,
+                'yc-sa-json-credentials': ''
+            }
+
+            const val = inputs[name]
+            if (options && options.required && !val) {
+                throw new Error(`Input required and not supplied: ${name}`)
+            }
+
+            return val ?? ''
+        })
+
+        await run()
+        expect(setFailedMock).toHaveBeenCalledWith('No credentials')
+    })
+
+    test('it should fail when OIDC token is not available', async () => {
+        const getIDTokenMock = jest.spyOn(core, 'getIDToken').mockResolvedValue('')
+
+        getInputMock.mockImplementation((name: string, options): string => {
+            const inputs: Record<string, string> = {
+                ...requiredInputs,
+                'yc-sa-json-credentials': '',
+                'yc-sa-id': 'test-sa-id'
+            }
+
+            const val = inputs[name]
+            if (options && options.required && !val) {
+                throw new Error(`Input required and not supplied: ${name}`)
+            }
+
+            return val ?? ''
+        })
+
+        await run()
+        expect(setFailedMock).toHaveBeenCalledWith('No credentials provided')
+
+        getIDTokenMock.mockRestore()
+    })
+
+    test('it should handle token exchange failure', async () => {
+        const getIDTokenMock = jest.spyOn(core, 'getIDToken').mockResolvedValue('github-token')
+        const axiosMock = jest.spyOn(require('axios'), 'post').mockResolvedValue({
+            status: 400,
+            statusText: 'Bad Request'
+        })
+
+        getInputMock.mockImplementation((name: string, options): string => {
+            const inputs: Record<string, string> = {
+                ...requiredInputs,
+                'yc-sa-json-credentials': '',
+                'yc-sa-id': 'test-sa-id'
+            }
+
+            const val = inputs[name]
+            if (options && options.required && !val) {
+                throw new Error(`Input required and not supplied: ${name}`)
+            }
+
+            return val ?? ''
+        })
+
+        await run()
+        expect(setFailedMock).toHaveBeenCalledWith('Failed to exchange token: 400 Bad Request')
+
+        getIDTokenMock.mockRestore()
+        axiosMock.mockRestore()
+    })
+
+    test('it should handle token exchange error response', async () => {
+        const getIDTokenMock = jest.spyOn(core, 'getIDToken').mockResolvedValue('github-token')
+        const axiosMock = jest.spyOn(require('axios'), 'post').mockResolvedValue({
+            status: 200,
+            data: { error: 'invalid_request', error_description: 'Invalid token' }
+        })
+
+        getInputMock.mockImplementation((name: string, options): string => {
+            const inputs: Record<string, string> = {
+                ...requiredInputs,
+                'yc-sa-json-credentials': '',
+                'yc-sa-id': 'test-sa-id'
+            }
+
+            const val = inputs[name]
+            if (options && options.required && !val) {
+                throw new Error(`Input required and not supplied: ${name}`)
+            }
+
+            return val ?? ''
+        })
+
+        await run()
+        expect(setFailedMock).toHaveBeenCalledWith('Failed to exchange token: invalid_request Invalid token')
+
+        getIDTokenMock.mockRestore()
+        axiosMock.mockRestore()
+    })
+
+    test('it should handle error during file upload', async () => {
+        const errorSpy = jest.spyOn(core, 'error').mockImplementation()
+
+        getInputMock.mockImplementation((name: string, options): string => {
+            const val = requiredInputs[name]
+            if (options && options.required && !val) {
+                throw new Error(`Input required and not supplied: ${name}`)
+            }
+            return val ?? ''
+        })
+
+        const getMultilineInputMock = jest.spyOn(core, 'getMultilineInput').mockImplementation((name: string) => {
+            if (name === 'include') {
+                return ['./src/*']
+            }
+            return []
+        })
+
+        mockedSendFn.mockRejectedValue(new Error('Upload failed'))
+
+        await run()
+
+        expect(errorSpy).toHaveBeenCalled()
+
+        errorSpy.mockRestore()
+        getMultilineInputMock.mockRestore()
+    })
+
+    test('it should handle non-existent path in include patterns', async () => {
+        const debugSpy = jest.spyOn(core, 'debug').mockImplementation()
+
+        getInputMock.mockImplementation((name: string, options): string => {
+            const val = requiredInputs[name]
+            if (options && options.required && !val) {
+                throw new Error(`Input required and not supplied: ${name}`)
+            }
+            return val ?? ''
+        })
+
+        const getMultilineInputMock = jest.spyOn(core, 'getMultilineInput').mockImplementation((name: string) => {
+            if (name === 'include') {
+                return ['./nonexistent-path']
+            }
+            return []
+        })
+
+        await run()
+
+        expect(setFailedMock).not.toHaveBeenCalled()
+        expect(debugSpy).toHaveBeenCalled()
+
+        debugSpy.mockRestore()
+        getMultilineInputMock.mockRestore()
+    })
+
+    test('it should handle clear bucket with empty contents', async () => {
+        const s3client = new S3Client({})
+        const sendMock = jest.spyOn(s3client, 'send')
+
+        sendMock.mockResolvedValue({
+            Contents: [],
+            IsTruncated: false
+        })
+
+        await clearBucket(s3client, 'test-bucket')
+
+        expect(sendMock).toHaveBeenCalledWith(expect.any(ListObjectsV2Command))
+        expect(sendMock).toHaveBeenCalledTimes(1)
+
+        sendMock.mockRestore()
+    })
+
+    test('it should handle clear bucket with undefined contents', async () => {
+        const s3client = new S3Client({})
+        const sendMock = jest.spyOn(s3client, 'send')
+
+        sendMock.mockResolvedValue({
+            Contents: undefined,
+            IsTruncated: false
+        })
+
+        await clearBucket(s3client, 'test-bucket')
+
+        expect(sendMock).toHaveBeenCalledWith(expect.any(ListObjectsV2Command))
+        expect(sendMock).toHaveBeenCalledTimes(1)
+
+        sendMock.mockRestore()
+    })
+
+    test('it should handle errors in run function', async () => {
+        getInputMock.mockImplementation((name: string, options): string => {
+            if (name === 'bucket') {
+                throw new Error('Unexpected error')
+            }
+            const val = requiredInputs[name]
+            if (options && options.required && !val) {
+                throw new Error(`Input required and not supplied: ${name}`)
+            }
+            return val ?? ''
+        })
+
+        await run()
+
+        expect(setFailedMock).toHaveBeenCalledWith('Unexpected error')
+    })
 })
