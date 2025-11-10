@@ -69,7 +69,7 @@
     "@grpc/grpc-js": "^1.14.0",
     "@smithy/protocol-http": "^5.3.4",
     "@yandex-cloud/nodejs-sdk": "^2.9.0",
-    "axios": "1.12.2",
+    "axios": "1.13.2",
     "glob": "^11.0.3",
     "mime-types": "^3.0.1",
     "minimatch": "10.0.3",
