@@ -71,7 +71,7 @@
     "@yandex-cloud/nodejs-sdk": "^2.9.0",
     "axios": "1.13.2",
     "glob": "^13.0.0",
-    "mime-types": "^3.0.1",
+    "mime-types": "^3.0.2",
     "minimatch": "10.1.1",
     "minimist": ">=1.2.8",
     "path-scurry": "^2.0.1"
