@@ -70,7 +70,7 @@
     "@smithy/protocol-http": "^5.3.8",
     "@yandex-cloud/nodejs-sdk": "^2.9.0",
     "axios": "1.13.4",
-    "glob": "^13.0.0",
+    "glob": "^13.0.1",
     "mime-types": "^3.0.2",
     "minimatch": "10.1.1",
     "minimist": ">=1.2.8",
