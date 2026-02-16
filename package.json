@@ -72,7 +72,7 @@
     "axios": "1.13.5",
     "glob": "^13.0.1",
     "mime-types": "^3.0.2",
-    "minimatch": "10.1.2",
+    "minimatch": "10.2.0",
     "minimist": ">=1.2.8",
     "path-scurry": "^2.0.1"
   },
