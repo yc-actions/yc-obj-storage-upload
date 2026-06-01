@@ -16,7 +16,8 @@
     "package:watch": "npm run package -- --watch",
     "test": "GITHUB_WORKSPACE=__tests__ jest",
     "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package",
-    "git-tag": "git tag v`cat package.json | jq -r '.version' | awk -F. '{print $1}'` -f &&  git tag v`cat package.json | jq -r '.version'` -f"
+    "git-tag": "git tag v`cat package.json | jq -r '.version' | awk -F. '{print $1}'` -f &&  git tag v`cat package.json | jq -r '.version'` -f",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -99,6 +100,7 @@
     "eslint-plugin-jsonc": "^2.21.1",
     "eslint-plugin-prettier": "^5.5.5",
     "globals": "^17.3.0",
+    "husky": "^9.1.7",
     "jest": "^30.2.0",
     "js-yaml": "^4.1.1",
     "make-coverage-badge": "^1.2.0",

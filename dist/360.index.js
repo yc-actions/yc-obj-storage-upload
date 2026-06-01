@@ -8,10 +8,9 @@ exports.modules = {
 
 
 
-var sharedIniFileLoader = __webpack_require__(94964);
-var propertyProvider = __webpack_require__(71238);
-var child_process = __webpack_require__(35317);
-var util = __webpack_require__(39023);
+var config = __webpack_require__(47291);
+var node_child_process = __webpack_require__(31421);
+var node_util = __webpack_require__(57975);
 var client = __webpack_require__(5152);
 
 const getValidatedProcessCredentials = (profileName, data, profiles) => {
@@ -49,7 +48,7 @@ const resolveProcessCredentials = async (profileName, profiles, logger) => {
     if (profiles[profileName]) {
         const credentialProcess = profile["credential_process"];
         if (credentialProcess !== undefined) {
-            const execPromise = util.promisify(sharedIniFileLoader.externalDataInterceptor?.getTokenRecord?.().exec ?? child_process.exec);
+            const execPromise = node_util.promisify(config.externalDataInterceptor?.getTokenRecord?.().exec ?? node_child_process.exec);
             try {
                 const { stdout } = await execPromise(credentialProcess);
                 let data;
@@ -62,15 +61,15 @@ const resolveProcessCredentials = async (profileName, profiles, logger) => {
                 return getValidatedProcessCredentials(profileName, data, profiles);
             }
             catch (error) {
-                throw new propertyProvider.CredentialsProviderError(error.message, { logger });
+                throw new config.CredentialsProviderError(error.message, { logger });
             }
         }
         else {
-            throw new propertyProvider.CredentialsProviderError(`Profile ${profileName} did not contain credential_process.`, { logger });
+            throw new config.CredentialsProviderError(`Profile ${profileName} did not contain credential_process.`, { logger });
         }
     }
     else {
-        throw new propertyProvider.CredentialsProviderError(`Profile ${profileName} could not be found in shared credentials file.`, {
+        throw new config.CredentialsProviderError(`Profile ${profileName} could not be found in shared credentials file.`, {
             logger,
         });
     }
@@ -78,8 +77,8 @@ const resolveProcessCredentials = async (profileName, profiles, logger) => {
 
 const fromProcess = (init = {}) => async ({ callerClientConfig } = {}) => {
     init.logger?.debug("@aws-sdk/credential-provider-process - fromProcess");
-    const profiles = await sharedIniFileLoader.parseKnownFiles(init);
-    return resolveProcessCredentials(sharedIniFileLoader.getProfileName({
+    const profiles = await config.parseKnownFiles(init);
+    return resolveProcessCredentials(config.getProfileName({
         profile: init.profile ?? callerClientConfig?.profile,
     }), profiles, init.logger);
 };
