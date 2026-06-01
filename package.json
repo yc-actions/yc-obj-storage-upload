@@ -69,10 +69,10 @@
     "@grpc/grpc-js": "^1.14.3",
     "@smithy/protocol-http": "^5.3.8",
     "@yandex-cloud/nodejs-sdk": "^2.9.0",
-    "axios": "1.13.5",
+    "axios": "1.16.1",
     "glob": "^13.0.1",
     "mime-types": "^3.0.2",
-    "minimatch": "10.1.2",
+    "minimatch": "10.2.5",
     "minimist": ">=1.2.8",
     "path-scurry": "^2.0.1"
   },
@@ -86,7 +86,7 @@
     "@types/jest": "^30.0.0",
     "@types/mime-types": "^3.0.1",
     "@types/mustache": "^4.2.6",
-    "@types/node": "25.2.2",
+    "@types/node": "25.9.1",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
     "@vercel/ncc": "^0.38.4",
@@ -102,12 +102,21 @@
     "jest": "^30.2.0",
     "js-yaml": "^4.1.1",
     "make-coverage-badge": "^1.2.0",
-    "prettier": "3.8.1",
+    "prettier": "3.8.3",
     "prettier-eslint": "^16.4.2",
     "ts-jest": "^29.4.6",
     "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=24"
+  },
+  "overrides": {
+    "prettier-eslint": {
+      "@typescript-eslint/parser": {
+        "@typescript-eslint/typescript-estree": {
+          "minimatch": "^9.0.7"
+        }
+      }
+    }
   }
 }
