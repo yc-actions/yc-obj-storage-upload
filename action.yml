@@ -44,6 +44,21 @@ inputs:
     description: 'Cache-Control header value. Multiline. Path mapped to value.'
     default: ''
     required: false
+  concurrency:
+    description: 'Maximum number of files uploaded in parallel. Values below 1 are clamped to 1, values above 256 are clamped to 256.'
+    default: '16'
+    required: false
+  skip-unchanged:
+    description: 'When true, skip uploading a file if the remote object''s ETag matches the local file''s MD5.
+      Content-only comparison: a change to cache-control alone will not trigger a re-upload, and multipart
+      objects are always re-uploaded.'
+    default: 'false'
+    required: false
+  fail-on-error:
+    description: 'When true, the action fails if one or more files could not be uploaded (after attempting every
+      file). When false (default) upload errors are only logged, preserving the previous behavior.'
+    default: 'false'
+    required: false
 
 branding:
   color: blue

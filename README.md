@@ -90,6 +90,32 @@ Value of `*` key will be used as default value for all files. You can also speci
           *: no-cache
 ```
 
+Files are uploaded in parallel. Use the `concurrency` option to control how many files are uploaded at once
+(default `16`; values below `1` are clamped to `1`, values above `256` are clamped to `256`).
+
+By default, upload errors are logged but do not fail the action (the previous behavior). Set `fail-on-error: true` to
+make the action fail when one or more files could not be uploaded; every file is still attempted first.
+
+To avoid re-uploading files that have not changed, set `skip-unchanged: true`. For each file the action issues a
+`HeadObject` request and skips the upload when the remote object's ETag equals the local file's MD5. Note that this
+is a content-only comparison: changing `cache-control` alone (with identical file content) will not trigger a
+re-upload, and objects stored as multipart uploads are always re-uploaded.
+
+```yaml
+    - name: Upload files to Object Storage
+      id: s3-upload
+      uses: yc-actions/yc-obj-storage-upload@v3
+      with:
+        yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+        bucket: ${{ secrets.BUCKET }}
+        root: ./src
+        include: |
+          *.js
+          package.json
+        concurrency: 32
+        skip-unchanged: true
+```
+
 See [action.yml](action.yml) for the full documentation for this action's inputs and outputs.
 
 ## Permissions
