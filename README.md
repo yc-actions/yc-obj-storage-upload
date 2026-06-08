@@ -20,7 +20,7 @@ authorizations method.
 ```yaml
     - name: Upload files to Object Storage
       id: s3-upload
-      uses: yc-actions/yc-obj-storage-upload@v3
+      uses: yc-actions/yc-obj-storage-upload@v4
       with:
         yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
         bucket: ${{ secrets.BUCKET }}
@@ -53,7 +53,7 @@ You can also use `clear: true` option to clear bucket before uploading files.
 ```yaml
     - name: Upload files to Object Storage
       id: s3-upload
-      uses: yc-actions/yc-obj-storage-upload@v3
+      uses: yc-actions/yc-obj-storage-upload@v4
       with:
         yc-sa-id: ${{ secrets.YC_SA_ID }}
         bucket: ${{ secrets.BUCKET }}
@@ -73,7 +73,7 @@ Value of `*` key will be used as default value for all files. You can also speci
 ```yaml
     - name: Upload files to Object Storage
       id: s3-upload
-      uses: yc-actions/yc-obj-storage-upload@v3
+      uses: yc-actions/yc-obj-storage-upload@v4
       with:
         yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
         bucket: ${{ secrets.BUCKET }}
@@ -104,7 +104,7 @@ re-upload, and objects stored as multipart uploads are always re-uploaded.
 ```yaml
     - name: Upload files to Object Storage
       id: s3-upload
-      uses: yc-actions/yc-obj-storage-upload@v3
+      uses: yc-actions/yc-obj-storage-upload@v4
       with:
         yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
         bucket: ${{ secrets.BUCKET }}
