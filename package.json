@@ -1,6 +1,6 @@
 {
   "name": "yc-actions-yc-obj-storage-upload",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "GitHub Action to upload files to Yandex Cloud Object Storage.",
   "exports": {
     ".": "./dist/index.js"

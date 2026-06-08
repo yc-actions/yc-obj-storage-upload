@@ -2,6 +2,7 @@ import {
     CompleteMultipartUploadCommand,
     CreateMultipartUploadCommand,
     DeleteObjectsCommand,
+    HeadObjectCommand,
     ListObjectsV2Command,
     ListObjectsV2Output,
     PutObjectCommand,
@@ -9,10 +10,11 @@ import {
     UploadPartCommand
 } from '@aws-sdk/client-s3'
 import { expect, test } from '@jest/globals'
-import { closeSync, mkdirSync, openSync, rmdirSync, writeFileSync, writeSync } from 'fs'
+import { createHash } from 'crypto'
+import { closeSync, mkdirSync, openSync, readFileSync, rmdirSync, writeFileSync, writeSync } from 'fs'
 import { join } from 'path'
 import { env } from 'process'
-import { clearBucket, run, upload, UploadInputs } from '../src/main'
+import { clearBucket, parseConcurrency, run, runPool, upload, UploadInputs } from '../src/main'
 // eslint-disable-next-line importPlugin/no-namespace
 import * as core from '@actions/core'
 import { newCacheControlConfig } from '../src/cache-control'
@@ -37,6 +39,64 @@ const requiredInputs: Record<string, string> = {
     root: '.',
     clear: 'false'
 }
+
+describe('parseConcurrency', () => {
+    test('defaults to 16 for empty or non-numeric input', () => {
+        expect(parseConcurrency('')).toBe(16)
+        expect(parseConcurrency('abc')).toBe(16)
+    })
+    test('honors a valid value', () => {
+        expect(parseConcurrency('8')).toBe(8)
+    })
+    test('clamps values below 1 up to 1', () => {
+        expect(parseConcurrency('0')).toBe(1)
+        expect(parseConcurrency('-5')).toBe(1)
+    })
+    test('clamps values above 256 down to 256', () => {
+        expect(parseConcurrency('257')).toBe(256)
+        expect(parseConcurrency('100000')).toBe(256)
+    })
+})
+
+describe('runPool', () => {
+    test('processes every item exactly once', async () => {
+        const items = [1, 2, 3, 4, 5, 6, 7]
+        const seen: number[] = []
+        await runPool(items, 3, async item => {
+            seen.push(item)
+        })
+        expect(seen.sort((a, b) => a - b)).toEqual(items)
+    })
+
+    test('never exceeds the concurrency limit', async () => {
+        const items = Array.from({ length: 20 }, (_, i) => i)
+        let active = 0
+        let maxActive = 0
+        await runPool(items, 4, async () => {
+            active += 1
+            maxActive = Math.max(maxActive, active)
+            await new Promise(resolve => setTimeout(resolve, 1))
+            active -= 1
+        })
+        expect(maxActive).toBeLessThanOrEqual(4)
+    })
+
+    test('handles an empty list without error', async () => {
+        const worker = jest.fn()
+        await runPool([], 4, worker)
+        expect(worker).not.toHaveBeenCalled()
+    })
+
+    test('rejects when a worker throws', async () => {
+        await expect(
+            runPool([1, 2, 3], 2, async item => {
+                if (item === 2) {
+                    throw new Error('boom')
+                }
+            })
+        ).rejects.toThrow('boom')
+    })
+})
 
 describe('upload', () => {
     const s3client = new S3Client({})
@@ -133,6 +193,24 @@ describe('upload', () => {
             exclude: [],
             root: '.',
             cacheControl: newCacheControlConfig()
+        }
+
+        await upload(s3client, inputs)
+
+        expect(mockedSendFn).toHaveBeenCalledTimes(3)
+        const keys = mockedSendFn.mock.calls.map(([cmd]) => (cmd as PutObjectCommand).input.Key).sort(strCompare)
+        expect(keys).toEqual(['src/exclude.txt', 'src/exclude.yaml', 'src/func.js'])
+    })
+
+    test('it uploads all files when a custom concurrency is set', async () => {
+        const inputs: UploadInputs = {
+            bucket: 'bucket',
+            prefix: '',
+            include: ['./src/*'],
+            exclude: [],
+            root: '.',
+            cacheControl: newCacheControlConfig(),
+            concurrency: 2
         }
 
         await upload(s3client, inputs)
@@ -335,6 +413,182 @@ describe('upload', () => {
         expect(createMultipartUploadCommand.input.Key).toEqual('10mbfile.txt')
 
         rmdirSync(join(cwd, './bigfile'), { recursive: true })
+    })
+
+    describe('skip-unchanged', () => {
+        test('skips a file whose remote ETag matches the local md5', async () => {
+            mockedSendFn.mockImplementation(async cmd => {
+                if (cmd instanceof HeadObjectCommand) {
+                    const key = cmd.input.Key as string
+                    const md5 = createHash('md5')
+                        .update(readFileSync(join('__tests__', key)))
+                        .digest('hex')
+                    return { ETag: `"${md5}"` }
+                }
+                return {}
+            })
+
+            const inputs: UploadInputs = {
+                bucket: 'bucket',
+                prefix: '',
+                include: ['./src/*'],
+                exclude: [],
+                root: '.',
+                cacheControl: newCacheControlConfig(),
+                skipUnchanged: true
+            }
+
+            await upload(s3client, inputs)
+
+            const putCalls = mockedSendFn.mock.calls.filter(([cmd]) => cmd instanceof PutObjectCommand)
+            expect(putCalls.length).toBe(0)
+        })
+
+        test('uploads a file whose remote ETag differs', async () => {
+            mockedSendFn.mockImplementation(async cmd => {
+                if (cmd instanceof HeadObjectCommand) {
+                    return { ETag: '"00000000000000000000000000000000"' }
+                }
+                return {}
+            })
+
+            const inputs: UploadInputs = {
+                bucket: 'bucket',
+                prefix: '',
+                include: ['./src/*'],
+                exclude: [],
+                root: '.',
+                cacheControl: newCacheControlConfig(),
+                skipUnchanged: true
+            }
+
+            await upload(s3client, inputs)
+
+            const putCalls = mockedSendFn.mock.calls.filter(([cmd]) => cmd instanceof PutObjectCommand)
+            expect(putCalls.length).toBe(3)
+        })
+
+        test('uploads when the remote ETag is a multipart ETag', async () => {
+            mockedSendFn.mockImplementation(async cmd => {
+                if (cmd instanceof HeadObjectCommand) {
+                    return { ETag: '"d41d8cd98f00b204e9800998ecf8427e-2"' }
+                }
+                return {}
+            })
+
+            const inputs: UploadInputs = {
+                bucket: 'bucket',
+                prefix: '',
+                include: ['./src/*'],
+                exclude: [],
+                root: '.',
+                cacheControl: newCacheControlConfig(),
+                skipUnchanged: true
+            }
+
+            await upload(s3client, inputs)
+
+            const putCalls = mockedSendFn.mock.calls.filter(([cmd]) => cmd instanceof PutObjectCommand)
+            expect(putCalls.length).toBe(3)
+        })
+
+        test('uploads when HeadObject reports the key does not exist', async () => {
+            mockedSendFn.mockImplementation(async cmd => {
+                if (cmd instanceof HeadObjectCommand) {
+                    const err = new Error('NotFound') as Error & { name: string }
+                    err.name = 'NotFound'
+                    throw err
+                }
+                return {}
+            })
+
+            const inputs: UploadInputs = {
+                bucket: 'bucket',
+                prefix: '',
+                include: ['./src/*'],
+                exclude: [],
+                root: '.',
+                cacheControl: newCacheControlConfig(),
+                skipUnchanged: true
+            }
+
+            await upload(s3client, inputs)
+
+            const putCalls = mockedSendFn.mock.calls.filter(([cmd]) => cmd instanceof PutObjectCommand)
+            expect(putCalls.length).toBe(3)
+        })
+
+        test('never calls HeadObject when skipUnchanged is not set', async () => {
+            const inputs: UploadInputs = {
+                bucket: 'bucket',
+                prefix: '',
+                include: ['./src/*'],
+                exclude: [],
+                root: '.',
+                cacheControl: newCacheControlConfig()
+            }
+
+            await upload(s3client, inputs)
+
+            const headCalls = mockedSendFn.mock.calls.filter(([cmd]) => cmd instanceof HeadObjectCommand)
+            expect(headCalls.length).toBe(0)
+        })
+    })
+
+    test('fails the action when failOnError is set and a file fails to upload', async () => {
+        const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
+        mockedSendFn.mockImplementation(async cmd => {
+            if (cmd instanceof PutObjectCommand || cmd instanceof CreateMultipartUploadCommand) {
+                throw new Error('upload boom')
+            }
+            return {}
+        })
+
+        const inputs: UploadInputs = {
+            bucket: 'bucket',
+            prefix: '',
+            include: ['./src/*'],
+            exclude: [],
+            root: '.',
+            cacheControl: newCacheControlConfig(),
+            failOnError: true
+        }
+
+        await upload(s3client, inputs)
+
+        // All three files were attempted...
+        const putCalls = mockedSendFn.mock.calls.filter(([cmd]) => cmd instanceof PutObjectCommand)
+        expect(putCalls.length).toBe(3)
+        // ...and the action was failed once with a summary of the failures.
+        expect(setFailedMock).toHaveBeenCalledTimes(1)
+        expect(setFailedMock).toHaveBeenCalledWith(expect.stringContaining('Failed to upload 3 file(s)'))
+        setFailedMock.mockRestore()
+    })
+
+    test('does not fail the action on upload errors by default, but still attempts every file', async () => {
+        const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
+        mockedSendFn.mockImplementation(async cmd => {
+            if (cmd instanceof PutObjectCommand || cmd instanceof CreateMultipartUploadCommand) {
+                throw new Error('upload boom')
+            }
+            return {}
+        })
+
+        const inputs: UploadInputs = {
+            bucket: 'bucket',
+            prefix: '',
+            include: ['./src/*'],
+            exclude: [],
+            root: '.',
+            cacheControl: newCacheControlConfig()
+        }
+
+        await upload(s3client, inputs)
+
+        const putCalls = mockedSendFn.mock.calls.filter(([cmd]) => cmd instanceof PutObjectCommand)
+        expect(putCalls.length).toBe(3)
+        expect(setFailedMock).not.toHaveBeenCalled()
+        setFailedMock.mockRestore()
     })
 })
 

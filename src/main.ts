@@ -14,6 +14,7 @@ import {
     type AbortMultipartUploadCommandOutput,
     type CompleteMultipartUploadCommandOutput,
     DeleteObjectsCommand,
+    HeadObjectCommand,
     ListObjectsV2Command,
     S3Client
 } from '@aws-sdk/client-s3'
@@ -22,6 +23,7 @@ import { HttpRequest } from '@smithy/protocol-http'
 import { type FinalizeRequestMiddleware } from '@aws-sdk/types/dist-types/middleware'
 
 import { IamTokenService } from '@yandex-cloud/nodejs-sdk/dist/token-service/iam-token-service'
+import { createHash } from 'crypto'
 import { createReadStream, statSync } from 'fs'
 import { glob } from 'glob'
 import mimeTypes from 'mime-types'
@@ -41,6 +43,9 @@ type ActionInputs = {
     exclude: string[]
     clear: boolean
     cacheControl: CacheControlConfig
+    concurrency: number
+    skipUnchanged: boolean
+    failOnError: boolean
 }
 
 export async function run(): Promise<void> {
@@ -74,7 +79,10 @@ export async function run(): Promise<void> {
             include: getMultilineInput('include', { required: false }),
             exclude: getMultilineInput('exclude', { required: false }),
             clear: getBooleanInput('clear', { required: false }),
-            cacheControl: parseCacheControlFormats(getMultilineInput('cache-control', { required: false }))
+            cacheControl: parseCacheControlFormats(getMultilineInput('cache-control', { required: false })),
+            concurrency: parseConcurrency(getInput('concurrency', { required: false })),
+            skipUnchanged: getBooleanInput('skip-unchanged', { required: false }),
+            failOnError: getBooleanInput('fail-on-error', { required: false })
         }
 
         // Initialize Token service with your SA credentials
@@ -138,12 +146,49 @@ export interface UploadInputs {
     prefix: string
     bucket: string
     cacheControl: CacheControlConfig
+    concurrency?: number
+    skipUnchanged?: boolean
+    failOnError?: boolean
+}
+
+export const DEFAULT_CONCURRENCY = 16
+export const MAX_CONCURRENCY = 256
+
+export function parseConcurrency(raw: string): number {
+    const n = parseInt(raw, 10)
+    if (isNaN(n)) {
+        return DEFAULT_CONCURRENCY
+    }
+    return Math.min(MAX_CONCURRENCY, Math.max(1, n))
+}
+
+export async function runPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void> {
+    let index = 0
+    const next = async (): Promise<void> => {
+        while (index < items.length) {
+            const current = items[index]
+            index += 1
+            await worker(current)
+        }
+    }
+    const workerCount = Math.max(1, Math.min(concurrency, items.length))
+    await Promise.all(Array.from({ length: workerCount }, () => next()))
+}
+
+async function fileMd5(filePath: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const hash = createHash('md5')
+        const stream = createReadStream(filePath)
+        stream.on('error', reject)
+        stream.on('data', chunk => hash.update(chunk))
+        stream.on('end', () => resolve(hash.digest('hex')))
+    })
 }
 
 const uploadFile = async (
     client: S3Client,
     filePath: string,
-    { root, bucket, prefix, cacheControl }: UploadInputs
+    { root, bucket, prefix, cacheControl, skipUnchanged }: UploadInputs
 ): Promise<CompleteMultipartUploadCommandOutput | AbortMultipartUploadCommandOutput | undefined> => {
     const stat = statSync(filePath)
     if (stat.isDirectory()) {
@@ -155,6 +200,22 @@ const uploadFile = async (
     if (prefix) {
         key = path.join(prefix, key)
     }
+
+    if (skipUnchanged) {
+        try {
+            const head = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }))
+            const remoteETag = (head.ETag ?? '').replace(/"/g, '').toLowerCase()
+            const localMd5 = (await fileMd5(filePath)).toLowerCase()
+            if (remoteETag && remoteETag === localMd5) {
+                info(`skipping unchanged ${key}`)
+                return
+            }
+        } catch (e) {
+            // Object missing (404) or HeadObject failed -> fall through and upload.
+            debug(`head check failed for ${key}: ${e}`)
+        }
+    }
+
     try {
         info(`starting to upload ${key}`)
         const parallelUploads3 = new Upload({
@@ -172,7 +233,8 @@ const uploadFile = async (
 
         return await parallelUploads3.done()
     } catch (e) {
-        error(`${e}`)
+        error(`failed to upload ${key}: ${e}`)
+        throw e
     }
 }
 
@@ -186,6 +248,7 @@ export async function upload(s3Client: S3Client, inputs: UploadInputs): Promise<
         const patterns = parseIgnoreGlobPatterns(inputs.exclude)
         const root = path.join(workspace, inputs.root)
 
+        const filesToUpload: string[] = []
         for (const include of inputs.include) {
             let pathFromSourceRoot = path.join(root, include)
             if (!pathFromSourceRoot.includes('*')) {
@@ -200,14 +263,26 @@ export async function upload(s3Client: S3Client, inputs: UploadInputs): Promise<
             }
             const matches = glob.sync(pathFromSourceRoot, { absolute: false })
             for (const match of matches) {
-                const res = !patterns.map(p => minimatch(match, p, { matchBase: true })).some(x => x)
-                if (res) {
-                    await uploadFile(s3Client, match, {
-                        ...inputs,
-                        root
-                    })
+                const excluded = patterns.map(p => minimatch(match, p, { matchBase: true })).some(x => x)
+                if (!excluded) {
+                    filesToUpload.push(match)
                 }
             }
+        }
+
+        const concurrency = inputs.concurrency ?? DEFAULT_CONCURRENCY
+        const failures: string[] = []
+        await runPool(filesToUpload, concurrency, async match => {
+            try {
+                await uploadFile(s3Client, match, { ...inputs, root })
+            } catch {
+                // uploadFile already logged the error; record the file so we can fail the action.
+                failures.push(match)
+            }
+        })
+
+        if (failures.length > 0 && inputs.failOnError) {
+            setFailed(`Failed to upload ${failures.length} file(s): ${failures.join(', ')}`)
         }
     } finally {
         endGroup()
