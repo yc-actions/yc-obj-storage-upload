@@ -69,7 +69,7 @@
     "@aws-sdk/lib-storage": "^3.985.0",
     "@grpc/grpc-js": "^1.14.3",
     "@smithy/protocol-http": "^5.3.8",
-    "@yandex-cloud/nodejs-sdk": "^2.9.0",
+    "@yandex-cloud/nodejs-sdk": "^3.2.0",
     "axios": "1.16.1",
     "glob": "^13.0.1",
     "mime-types": "^3.0.2",
