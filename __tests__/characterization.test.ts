@@ -6,37 +6,41 @@
  * scenario. Captured on the pre-rewrite code; the rewritten code must reproduce
  * it byte-identically.
  */
-// eslint-disable-next-line importPlugin/no-namespace
-import * as core from '@actions/core'
-import axios from 'axios'
+import { jest } from '@jest/globals'
+import type { InputOptions } from '@actions/core'
+import { env } from 'node:process'
 
-import { normalize } from '../__fixtures__/normalize-request'
+import * as core from '../__fixtures__/core.js'
+import * as axios from '../__fixtures__/axios.js'
+import { normalize } from '../__fixtures__/normalize-request.js'
 import {
     __setHeadObjectMode,
     __setListObjectPages,
     __setUploadFails,
     captureAuthHeaders,
+    makeRecordingS3Client,
     RecordedCommand,
     recorded,
     resetRecorder
-} from '../__fixtures__/s3-recorder'
-import { run } from '../src/main'
+} from '../__fixtures__/s3-recorder.js'
 
-// jest.mock is hoisted above the imports above, so `run` picks up the recorder.
-jest.mock('@aws-sdk/client-s3', () => {
-    const actual = jest.requireActual('@aws-sdk/client-s3')
-    const recorder = jest.requireActual('../__fixtures__/s3-recorder')
-    return { ...actual, S3Client: recorder.makeRecordingS3Client(actual.S3Client) }
-})
+const actualS3 = await import('@aws-sdk/client-s3')
 
-// Keeps the SA JSON credential path off grpc and off the network.
-jest.mock('@yandex-cloud/nodejs-sdk/dist/token-service/iam-token-service', () => ({
+jest.unstable_mockModule('@actions/core', () => core)
+jest.unstable_mockModule('axios', () => axios)
+jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
+    ...actualS3,
+    S3Client: makeRecordingS3Client(actualS3.S3Client)
+}))
+jest.unstable_mockModule('@yandex-cloud/nodejs-sdk/dist/token-service/iam-token-service', () => ({
     IamTokenService: class {
         async getToken(): Promise<string> {
             return 'token-from-sa-json'
         }
     }
 }))
+
+const { run } = await import('../src/main.js')
 
 const SA_JSON = `{
     "id": "id",
@@ -188,6 +192,20 @@ function stableErrorCalls(calls: unknown[][]): unknown[][] {
     return [...calls].sort((a, b) => String(a[0]).localeCompare(String(b[0])))
 }
 
+const WORKSPACE = env.GITHUB_WORKSPACE ?? ''
+
+/**
+ * Strips the GITHUB_WORKSPACE prefix from recorded paths.
+ *
+ * src/main.ts builds its setFailed message from raw glob matches rather than
+ * S3 keys, so the message embeds the local fixture directory. Scrubbing it
+ * keeps the snapshot a contract about behavior rather than about where the
+ * fixtures happen to live.
+ */
+function scrubWorkspace(value: string): string {
+    return WORKSPACE ? value.split(`${WORKSPACE}/`).join('') : value
+}
+
 /**
  * `run()` reports failed uploads as a single `core.setFailed` call whose
  * message embeds a comma-joined file list built from completion order. Sort
@@ -208,6 +226,7 @@ function stableSetFailedCalls(calls: unknown[][]): unknown[][] {
                 prefix +
                 list
                     .split(', ')
+                    .map(scrubWorkspace)
                     .sort((a, b) => a.localeCompare(b))
                     .join(', ')
             )
@@ -216,42 +235,24 @@ function stableSetFailedCalls(calls: unknown[][]): unknown[][] {
 }
 
 describe('characterization', () => {
-    let setFailedMock: jest.SpyInstance
-    let errorMock: jest.SpyInstance
-
     beforeEach(() => {
         jest.clearAllMocks()
         resetRecorder()
-
-        setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
-        errorMock = jest.spyOn(core, 'error').mockImplementation()
-        jest.spyOn(core, 'info').mockImplementation()
-        jest.spyOn(core, 'debug').mockImplementation()
-        jest.spyOn(core, 'startGroup').mockImplementation()
-        jest.spyOn(core, 'endGroup').mockImplementation()
-    })
-
-    afterEach(() => {
-        jest.restoreAllMocks()
     })
 
     for (const scenario of SCENARIOS) {
         it(`records S3 wiring and commands: ${scenario.name}`, async () => {
-            jest.spyOn(core, 'getInput').mockImplementation((name: string, options?: core.InputOptions): string => {
+            core.getInput.mockImplementation((name: string, options?: InputOptions): string => {
                 const value = scenario.inputs[name] ?? ''
                 if (options?.required && !value) {
                     throw new Error(`Input required and not supplied: ${name}`)
                 }
                 return value
             })
-            jest.spyOn(core, 'getMultilineInput').mockImplementation(
-                (name: string): string[] => scenario.multiline?.[name] ?? []
-            )
-            jest.spyOn(core, 'getBooleanInput').mockImplementation(
-                (name: string): boolean => scenario.booleans?.[name] ?? false
-            )
-            jest.spyOn(core, 'getIDToken').mockResolvedValue(scenario.idToken ?? '')
-            jest.spyOn(axios, 'post').mockResolvedValue(
+            core.getMultilineInput.mockImplementation((name: string): string[] => scenario.multiline?.[name] ?? [])
+            core.getBooleanInput.mockImplementation((name: string): boolean => scenario.booleans?.[name] ?? false)
+            core.getIDToken.mockResolvedValue(scenario.idToken ?? '')
+            axios.post.mockResolvedValue(
                 scenario.axiosResponse ?? { status: 200, data: { access_token: 'exchanged-token' } }
             )
 
@@ -266,8 +267,8 @@ describe('characterization', () => {
                 stack: recorded.stack,
                 authHeaders: normalize(recorded.authHeaders),
                 commands: normalize(stableCommands(recorded.commands)),
-                setFailed: normalize(stableSetFailedCalls(setFailedMock.mock.calls)),
-                errors: normalize(stableErrorCalls(errorMock.mock.calls))
+                setFailed: normalize(stableSetFailedCalls(core.setFailed.mock.calls)),
+                errors: normalize(stableErrorCalls(core.error.mock.calls))
             }).toMatchSnapshot()
         })
     }

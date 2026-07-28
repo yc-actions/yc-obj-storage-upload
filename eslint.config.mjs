@@ -16,21 +16,7 @@ const compat = new FlatCompat({
 
 export default [
     {
-        ignores: [
-            '**/coverage',
-            '**/dist',
-            '**/node_modules',
-            '__fixtures__/workspace',
-            // SCAFFOLDING - Task 2 only. Task 3 removes all four entries below:
-            // it rewrites both test files to ESM and moves the two payload
-            // directories to __fixtures__/workspace/, which is already ignored
-            // above. If any of these survive past Task 3, lint coverage is
-            // silently incomplete.
-            '__tests__/main.test.ts',
-            '__tests__/characterization.test.ts',
-            '__tests__/src',
-            '__tests__/src_with_subfolders'
-        ]
+        ignores: ['**/coverage', '**/dist', '**/node_modules', '__fixtures__/workspace']
     },
     ...compat.extends(
         'eslint:recommended',
@@ -64,7 +50,11 @@ export default [
                         'eslint.config.mjs',
                         'jest.config.js',
                         'rollup.config.ts'
-                    ]
+                    ],
+                    // __fixtures__/core.ts and __fixtures__/axios.ts (added in the
+                    // ESM test port) push the default-project glob match past the
+                    // built-in cap of 8 files.
+                    maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 10
                 },
                 tsconfigRootDir: import.meta.dirname
             }

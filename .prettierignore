@@ -7,9 +7,5 @@ docs/
 .superpowers/
 
 # Upload payload, not source: the characterization snapshot measures these
-# files' byte sizes live, so reformatting them changes test behavior. The
-# two __tests__/ entries are removed by Task 3 once it moves these
-# directories into __fixtures__/workspace/; that entry is permanent.
-__tests__/src/
-__tests__/src_with_subfolders/
+# files' byte sizes live, so reformatting them changes test behavior.
 __fixtures__/workspace/

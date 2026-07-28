@@ -426,7 +426,7 @@ exports[`characterization records S3 wiring and commands: fail-on-error with a f
   ],
   "setFailed": [
     [
-      "Failed to upload 3 file(s): __tests__/src/exclude.txt, __tests__/src/exclude.yaml, __tests__/src/func.js",
+      "Failed to upload 3 file(s): src/exclude.txt, src/exclude.yaml, src/func.js",
     ],
   ],
   "stack": [

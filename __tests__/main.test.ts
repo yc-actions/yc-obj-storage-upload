@@ -1,3 +1,4 @@
+import { expect, jest, test } from '@jest/globals'
 import {
     CompleteMultipartUploadCommand,
     CreateMultipartUploadCommand,
@@ -9,15 +10,21 @@ import {
     S3Client,
     UploadPartCommand
 } from '@aws-sdk/client-s3'
-import { expect, test } from '@jest/globals'
-import { createHash } from 'crypto'
-import { closeSync, mkdirSync, openSync, readFileSync, rmdirSync, writeFileSync, writeSync } from 'fs'
-import { join } from 'path'
-import { env } from 'process'
-import { clearBucket, parseConcurrency, run, runPool, upload, UploadInputs } from '../src/main'
-// eslint-disable-next-line importPlugin/no-namespace
-import * as core from '@actions/core'
-import { newCacheControlConfig } from '../src/cache-control'
+import { createHash } from 'node:crypto'
+import { closeSync, mkdirSync, openSync, readFileSync, rmdirSync, writeFileSync, writeSync } from 'node:fs'
+import { join } from 'node:path'
+import { env } from 'node:process'
+
+import * as core from '../__fixtures__/core.js'
+import * as axios from '../__fixtures__/axios.js'
+
+jest.unstable_mockModule('@actions/core', () => core)
+jest.unstable_mockModule('axios', () => axios)
+
+const { clearBucket, parseConcurrency, run, runPool, upload } = await import('../src/main.js')
+const { newCacheControlConfig } = await import('../src/cache-control.js')
+
+type UploadInputs = import('../src/main.js').UploadInputs
 
 const strCompare = (a: string | undefined, b: string | undefined): number => {
     if (!a || !b) {
@@ -29,7 +36,7 @@ const strCompare = (a: string | undefined, b: string | undefined): number => {
 const requiredInputs: Record<string, string> = {
     'yc-sa-json-credentials': `{
     "id": "id",
-    "created_at": "2021-01-01T00:00:00Z", 
+    "created_at": "2021-01-01T00:00:00Z",
     "key_algorithm": "RSA_2048",
     "service_account_id": "service_account_id",
     "private_key": "private_key",
@@ -394,7 +401,6 @@ describe('upload', () => {
             mkdirSync(join(cwd, './bigfile'))
         } catch (e: unknown) {
             if (e instanceof Error && 'code' in e && e.code !== 'EEXIST') {
-                // eslint-disable-next-line no-console
                 console.log(e)
                 throw e
             }
@@ -421,7 +427,7 @@ describe('upload', () => {
                 if (cmd instanceof HeadObjectCommand) {
                     const key = cmd.input.Key as string
                     const md5 = createHash('md5')
-                        .update(readFileSync(join('__tests__', key)))
+                        .update(readFileSync(join(env.GITHUB_WORKSPACE ?? '', key)))
                         .digest('hex')
                     return { ETag: `"${md5}"` }
                 }
@@ -536,7 +542,6 @@ describe('upload', () => {
     })
 
     test('fails the action when failOnError is set and a file fails to upload', async () => {
-        const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
         mockedSendFn.mockImplementation(async cmd => {
             if (cmd instanceof PutObjectCommand || cmd instanceof CreateMultipartUploadCommand) {
                 throw new Error('upload boom')
@@ -560,13 +565,11 @@ describe('upload', () => {
         const putCalls = mockedSendFn.mock.calls.filter(([cmd]) => cmd instanceof PutObjectCommand)
         expect(putCalls.length).toBe(3)
         // ...and the action was failed once with a summary of the failures.
-        expect(setFailedMock).toHaveBeenCalledTimes(1)
-        expect(setFailedMock).toHaveBeenCalledWith(expect.stringContaining('Failed to upload 3 file(s)'))
-        setFailedMock.mockRestore()
+        expect(core.setFailed).toHaveBeenCalledTimes(1)
+        expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('Failed to upload 3 file(s)'))
     })
 
     test('does not fail the action on upload errors by default, but still attempts every file', async () => {
-        const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
         mockedSendFn.mockImplementation(async cmd => {
             if (cmd instanceof PutObjectCommand || cmd instanceof CreateMultipartUploadCommand) {
                 throw new Error('upload boom')
@@ -587,35 +590,36 @@ describe('upload', () => {
 
         const putCalls = mockedSendFn.mock.calls.filter(([cmd]) => cmd instanceof PutObjectCommand)
         expect(putCalls.length).toBe(3)
-        expect(setFailedMock).not.toHaveBeenCalled()
-        setFailedMock.mockRestore()
+        expect(core.setFailed).not.toHaveBeenCalled()
     })
 })
 
 describe('run', () => {
-    // Mock the GitHub Actions core library
-    let getInputMock: jest.SpyInstance
-    let getBooleanInputMock: jest.SpyInstance
-    let setFailedMock: jest.SpyInstance
-
     const s3client = new S3Client({})
     const mockedSendFn = jest.spyOn(s3client, 'send')
 
     beforeEach(() => {
         jest.clearAllMocks()
-        getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
-        getBooleanInputMock = jest.spyOn(core, 'getBooleanInput').mockImplementation()
-        setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
 
-        getBooleanInputMock.mockImplementation((): boolean => {
+        core.getBooleanInput.mockImplementation((): boolean => {
             return false
+        })
+        // Under jest.unstable_mockModule the whole @actions/core module is
+        // replaced, so an unconfigured getMultilineInput has no real
+        // implementation to fall back on (unlike the old jest.spyOn, where
+        // an un-mocked call ran the real @actions/core function, which
+        // returns [] for an absent input). Default it the same way so tests
+        // that don't care about include/exclude/cache-control still reach
+        // parseCacheControlFormats with an iterable.
+        core.getMultilineInput.mockImplementation((): string[] => {
+            return []
         })
 
         mockedSendFn.mockReset()
     })
 
     test('it should fail if bucket is not provided', async () => {
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             const inputs: Record<string, string> = {
                 ...requiredInputs,
                 bucket: ''
@@ -629,10 +633,10 @@ describe('run', () => {
             return val ?? ''
         })
         await run()
-        expect(setFailedMock).toHaveBeenCalledWith('Input required and not supplied: bucket')
+        expect(core.setFailed).toHaveBeenCalledWith('Input required and not supplied: bucket')
     })
     test('it should work with minimal inputs', async () => {
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             const val = requiredInputs[name]
             if (options && options.required && !val) {
                 throw new Error(`Input required and not supplied: ${name}`)
@@ -641,11 +645,11 @@ describe('run', () => {
             return val ?? ''
         })
         await run()
-        expect(setFailedMock).not.toHaveBeenCalled()
+        expect(core.setFailed).not.toHaveBeenCalled()
     })
 
     test('it should use yc-iam-token when provided', async () => {
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             const inputs: Record<string, string> = {
                 ...requiredInputs,
                 'yc-sa-json-credentials': '',
@@ -660,17 +664,17 @@ describe('run', () => {
             return val ?? ''
         })
         await run()
-        expect(setFailedMock).not.toHaveBeenCalled()
+        expect(core.setFailed).not.toHaveBeenCalled()
     })
 
     test('it should use yc-sa-id with OIDC token', async () => {
-        const getIDTokenMock = jest.spyOn(core, 'getIDToken').mockResolvedValue('github-token')
-        const axiosMock = jest.spyOn(require('axios'), 'post').mockResolvedValue({
+        core.getIDToken.mockResolvedValue('github-token')
+        axios.post.mockResolvedValue({
             status: 200,
             data: { access_token: 'exchanged-token' }
         })
 
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             const inputs: Record<string, string> = {
                 ...requiredInputs,
                 'yc-sa-json-credentials': '',
@@ -686,8 +690,8 @@ describe('run', () => {
         })
 
         await run()
-        expect(setFailedMock).not.toHaveBeenCalled()
-        expect(axiosMock).toHaveBeenCalledWith(
+        expect(core.setFailed).not.toHaveBeenCalled()
+        expect(axios.post).toHaveBeenCalledWith(
             'https://auth.yandex.cloud/oauth/token',
             expect.objectContaining({
                 audience: 'test-sa-id',
@@ -695,13 +699,10 @@ describe('run', () => {
             }),
             expect.any(Object)
         )
-
-        getIDTokenMock.mockRestore()
-        axiosMock.mockRestore()
     })
 
     test('it should fail when no credentials provided', async () => {
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             const inputs: Record<string, string> = {
                 ...requiredInputs,
                 'yc-sa-json-credentials': ''
@@ -716,13 +717,13 @@ describe('run', () => {
         })
 
         await run()
-        expect(setFailedMock).toHaveBeenCalledWith('No credentials')
+        expect(core.setFailed).toHaveBeenCalledWith('No credentials')
     })
 
     test('it should fail when OIDC token is not available', async () => {
-        const getIDTokenMock = jest.spyOn(core, 'getIDToken').mockResolvedValue('')
+        core.getIDToken.mockResolvedValue('')
 
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             const inputs: Record<string, string> = {
                 ...requiredInputs,
                 'yc-sa-json-credentials': '',
@@ -738,19 +739,17 @@ describe('run', () => {
         })
 
         await run()
-        expect(setFailedMock).toHaveBeenCalledWith('No credentials provided')
-
-        getIDTokenMock.mockRestore()
+        expect(core.setFailed).toHaveBeenCalledWith('No credentials provided')
     })
 
     test('it should handle token exchange failure', async () => {
-        const getIDTokenMock = jest.spyOn(core, 'getIDToken').mockResolvedValue('github-token')
-        const axiosMock = jest.spyOn(require('axios'), 'post').mockResolvedValue({
+        core.getIDToken.mockResolvedValue('github-token')
+        axios.post.mockResolvedValue({
             status: 400,
             statusText: 'Bad Request'
         })
 
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             const inputs: Record<string, string> = {
                 ...requiredInputs,
                 'yc-sa-json-credentials': '',
@@ -766,20 +765,17 @@ describe('run', () => {
         })
 
         await run()
-        expect(setFailedMock).toHaveBeenCalledWith('Failed to exchange token: 400 Bad Request')
-
-        getIDTokenMock.mockRestore()
-        axiosMock.mockRestore()
+        expect(core.setFailed).toHaveBeenCalledWith('Failed to exchange token: 400 Bad Request')
     })
 
     test('it should handle token exchange error response', async () => {
-        const getIDTokenMock = jest.spyOn(core, 'getIDToken').mockResolvedValue('github-token')
-        const axiosMock = jest.spyOn(require('axios'), 'post').mockResolvedValue({
+        core.getIDToken.mockResolvedValue('github-token')
+        axios.post.mockResolvedValue({
             status: 200,
             data: { error: 'invalid_request', error_description: 'Invalid token' }
         })
 
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             const inputs: Record<string, string> = {
                 ...requiredInputs,
                 'yc-sa-json-credentials': '',
@@ -795,16 +791,11 @@ describe('run', () => {
         })
 
         await run()
-        expect(setFailedMock).toHaveBeenCalledWith('Failed to exchange token: invalid_request Invalid token')
-
-        getIDTokenMock.mockRestore()
-        axiosMock.mockRestore()
+        expect(core.setFailed).toHaveBeenCalledWith('Failed to exchange token: invalid_request Invalid token')
     })
 
     test('it should handle error during file upload', async () => {
-        const errorSpy = jest.spyOn(core, 'error').mockImplementation()
-
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             const val = requiredInputs[name]
             if (options && options.required && !val) {
                 throw new Error(`Input required and not supplied: ${name}`)
@@ -812,7 +803,7 @@ describe('run', () => {
             return val ?? ''
         })
 
-        const getMultilineInputMock = jest.spyOn(core, 'getMultilineInput').mockImplementation((name: string) => {
+        core.getMultilineInput.mockImplementation((name: string) => {
             if (name === 'include') {
                 return ['./src/*']
             }
@@ -823,16 +814,11 @@ describe('run', () => {
 
         await run()
 
-        expect(errorSpy).toHaveBeenCalled()
-
-        errorSpy.mockRestore()
-        getMultilineInputMock.mockRestore()
+        expect(core.error).toHaveBeenCalled()
     })
 
     test('it should handle non-existent path in include patterns', async () => {
-        const debugSpy = jest.spyOn(core, 'debug').mockImplementation()
-
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             const val = requiredInputs[name]
             if (options && options.required && !val) {
                 throw new Error(`Input required and not supplied: ${name}`)
@@ -840,7 +826,7 @@ describe('run', () => {
             return val ?? ''
         })
 
-        const getMultilineInputMock = jest.spyOn(core, 'getMultilineInput').mockImplementation((name: string) => {
+        core.getMultilineInput.mockImplementation((name: string) => {
             if (name === 'include') {
                 return ['./nonexistent-path']
             }
@@ -849,11 +835,8 @@ describe('run', () => {
 
         await run()
 
-        expect(setFailedMock).not.toHaveBeenCalled()
-        expect(debugSpy).toHaveBeenCalled()
-
-        debugSpy.mockRestore()
-        getMultilineInputMock.mockRestore()
+        expect(core.setFailed).not.toHaveBeenCalled()
+        expect(core.debug).toHaveBeenCalled()
     })
 
     test('it should handle clear bucket with empty contents', async () => {
@@ -891,7 +874,7 @@ describe('run', () => {
     })
 
     test('it should handle errors in run function', async () => {
-        getInputMock.mockImplementation((name: string, options): string => {
+        core.getInput.mockImplementation((name: string, options): string => {
             if (name === 'bucket') {
                 throw new Error('Unexpected error')
             }
@@ -904,6 +887,6 @@ describe('run', () => {
 
         await run()
 
-        expect(setFailedMock).toHaveBeenCalledWith('Unexpected error')
+        expect(core.setFailed).toHaveBeenCalledWith('Unexpected error')
     })
 })
