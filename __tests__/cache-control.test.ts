@@ -1,4 +1,4 @@
-import { getCacheControlValue, parseCacheControlFormats } from '../src/cache-control'
+import { getCacheControlValue, parseCacheControlFormats } from '../src/cache-control.js'
 
 describe('Cache-Control', () => {
     describe('parseCacheControlFormats', () => {
