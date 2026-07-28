@@ -18,6 +18,7 @@
   "exclude": [
     "node_modules",
     "**/*.test.ts",
-    "**/__mocks__"
+    "**/__mocks__",
+    "__fixtures__"
   ]
 }
