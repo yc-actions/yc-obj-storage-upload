@@ -32,7 +32,7 @@ jest.unstable_mockModule('@aws-sdk/client-s3', () => ({
     ...actualS3,
     S3Client: makeRecordingS3Client(actualS3.S3Client)
 }))
-jest.unstable_mockModule('@yandex-cloud/nodejs-sdk/dist/token-service/iam-token-service', () => ({
+jest.unstable_mockModule('@yandex-cloud/nodejs-sdk/dist/token-service/iam-token-service.js', () => ({
     IamTokenService: class {
         async getToken(): Promise<string> {
             return 'token-from-sa-json'
