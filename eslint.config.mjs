@@ -53,8 +53,9 @@ export default [
                     ],
                     // __fixtures__/core.ts and __fixtures__/axios.ts (added in the
                     // ESM test port) push the default-project glob match past the
-                    // built-in cap of 8 files.
-                    maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 10
+                    // built-in cap of 8 files. __tests__/bundle.test.ts (Task 4)
+                    // pushed it to 11.
+                    maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 11
                 },
                 tsconfigRootDir: import.meta.dirname
             }
