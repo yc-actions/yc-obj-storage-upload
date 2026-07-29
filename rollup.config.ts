@@ -41,7 +41,7 @@ const config = {
     // `import` of the .json file, but Rollup's core has no loader for .json
     // itself; without this plugin that import fails with "Expected ';', '}'
     // or <eof>" because Rollup tries to parse the JSON as JavaScript.
-    plugins: [typescript(), json(), nodeResolve({ preferBuiltins: true }), commonjs()]
+    plugins: [typescript({ sourceMap: false }), json(), nodeResolve({ preferBuiltins: true }), commonjs()]
 }
 
 export default config

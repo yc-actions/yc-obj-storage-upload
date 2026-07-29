@@ -101,3 +101,7 @@ lib/**/*
 
 .idea
 key.json
+
+# Never committed: scratch docs and superpowers workflow state
+docs/
+.superpowers/
