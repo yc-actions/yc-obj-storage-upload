@@ -11,6 +11,7 @@ authorizations method.
 
 - [Usage](#usage)
 - [Permissions](#permissions)
+- [Development](#development)
 - [License Summary](#license-summary)
 
 <!-- tocstop -->
@@ -127,6 +128,21 @@ See [action.yml](action.yml) for the full documentation for this action's inputs
 To perform this action, it is required that the service account on behalf of which we are acting has granted the
 `storage.uploader` role or greater. If you want to clear bucket before uploading files using `clear: true` option, the
 service account should have `storage.editor` role or greater.
+
+## Development
+
+Requires Node 24 (see `.node-version`).
+
+```bash
+npm ci
+npm test          # jest, ESM
+npm run lint      # eslint flat config
+npm run bundle    # format + rollup -> dist/index.js
+npm run local-action  # run the action locally against .env
+```
+
+`dist/` is committed and checked by CI: run `npm run bundle` and commit the result whenever you change anything under
+`src/`.
 
 ## License Summary
 

@@ -11,5 +11,8 @@
         "statusBar.debuggingForeground": "#FBFBEA",
         "statusBar.noFolderBackground": "#4D4D0F",
         "statusBar.noFolderForeground": "#FBFBEA"
-    }
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "eslint.validate": ["javascript", "typescript"]
 }
