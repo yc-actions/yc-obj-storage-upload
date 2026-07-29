@@ -1,0 +1,954 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`characterization records S3 wiring and commands: IAM token credentials 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "test-iam-token",
+  },
+  "commands": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:9",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:14",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:154",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: OIDC token unavailable 1`] = `
+{
+  "authHeaders": null,
+  "commands": [],
+  "configs": [],
+  "errors": [],
+  "middlewareOptions": [],
+  "setFailed": [
+    [
+      "No credentials provided",
+    ],
+  ],
+  "stack": [],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: bucket input missing 1`] = `
+{
+  "authHeaders": null,
+  "commands": [],
+  "configs": [],
+  "errors": [],
+  "middlewareOptions": [],
+  "setFailed": [
+    [
+      "Input required and not supplied: bucket",
+    ],
+  ],
+  "stack": [],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: cache-control mapping with a default 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "token-from-sa-json",
+  },
+  "commands": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:9",
+        "Bucket": "bucket",
+        "CacheControl": "no-cache",
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:14",
+        "Bucket": "bucket",
+        "CacheControl": "no-cache",
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:154",
+        "Bucket": "bucket",
+        "CacheControl": "public, max-age=31536000",
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: clear enabled 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "token-from-sa-json",
+  },
+  "commands": [
+    {
+      "command": "DeleteObjectsCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Delete": {
+          "Objects": [
+            {
+              "Key": "src/func.js",
+            },
+          ],
+        },
+      },
+    },
+    {
+      "command": "ListObjectsV2Command",
+      "input": {
+        "Bucket": "bucket",
+        "ContinuationToken": undefined,
+        "MaxKeys": 1000,
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:9",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:14",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:154",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: custom concurrency 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "token-from-sa-json",
+  },
+  "commands": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:9",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:14",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:154",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: fail-on-error with a failing upload 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "token-from-sa-json",
+  },
+  "commands": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:9",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:14",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:154",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [
+    [
+      "failed to upload src/exclude.txt: Error: upload boom",
+    ],
+    [
+      "failed to upload src/exclude.yaml: Error: upload boom",
+    ],
+    [
+      "failed to upload src/func.js: Error: upload boom",
+    ],
+  ],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [
+    [
+      "Failed to upload 3 file(s): src/exclude.txt, src/exclude.yaml, src/func.js",
+    ],
+  ],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: include and exclude patterns 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "token-from-sa-json",
+  },
+  "commands": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:14",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:154",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: minimal inputs, SA JSON credentials 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "token-from-sa-json",
+  },
+  "commands": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:9",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:14",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:154",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: no credentials 1`] = `
+{
+  "authHeaders": null,
+  "commands": [],
+  "configs": [],
+  "errors": [],
+  "middlewareOptions": [],
+  "setFailed": [
+    [
+      "No credentials",
+    ],
+  ],
+  "stack": [],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: prefix set 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "token-from-sa-json",
+  },
+  "commands": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:9",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/plain",
+        "Key": "prefix/src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:14",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/yaml",
+        "Key": "prefix/src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:154",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/javascript",
+        "Key": "prefix/src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: skip-unchanged, remote ETag differs 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "token-from-sa-json",
+  },
+  "commands": [
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/func.js",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:9",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:14",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:154",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: skip-unchanged, remote ETag matches 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "token-from-sa-json",
+  },
+  "commands": [
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: token exchange returns an error body 1`] = `
+{
+  "authHeaders": null,
+  "commands": [],
+  "configs": [],
+  "errors": [],
+  "middlewareOptions": [],
+  "setFailed": [
+    [
+      "Failed to exchange token: invalid_request Invalid token",
+    ],
+  ],
+  "stack": [],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: token exchange returns non-200 1`] = `
+{
+  "authHeaders": null,
+  "commands": [],
+  "configs": [],
+  "errors": [],
+  "middlewareOptions": [],
+  "setFailed": [
+    [
+      "Failed to exchange token: 400 Bad Request",
+    ],
+  ],
+  "stack": [],
+}
+`;
+
+exports[`characterization records S3 wiring and commands: workload identity federation credentials 1`] = `
+{
+  "authHeaders": {
+    "X-YaCloud-SubjectToken": "exchanged-token",
+  },
+  "commands": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:9",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:14",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "bytes:154",
+        "Bucket": "bucket",
+        "CacheControl": undefined,
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "configs": [
+    {
+      "endpoint": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "requestChecksumCalculation": "WHEN_REQUIRED",
+      "responseChecksumValidation": "WHEN_REQUIRED",
+    },
+  ],
+  "errors": [],
+  "middlewareOptions": [
+    {
+      "name": "ycAuthMiddleware",
+      "override": true,
+      "relation": "after",
+      "tags": [
+        "YCAUTH",
+      ],
+      "toMiddleware": "retryMiddleware",
+    },
+  ],
+  "setFailed": [],
+  "stack": [
+    "loggerMiddleware - initialize",
+    "validateBucketNameMiddleware - initialize",
+    "regionRedirectMiddleware - initialize",
+    "serializerMiddleware - serialize",
+    "contentLengthMiddleware - build",
+    "addExpectContinueMiddleware - build",
+    "s3ExpressMiddleware - build",
+    "getUserAgentMiddleware - build",
+    "hostHeaderMiddleware - build",
+    "recursionDetectionMiddleware - build",
+    "retryMiddleware - finalizeRequest",
+    "ycAuthMiddleware - after retryMiddleware",
+    "deserializerMiddleware - deserialize",
+  ],
+}
+`;

@@ -95,9 +95,13 @@ typings/
 Thumbs.db
 
 # Ignore built ts files
-__tests__/runner/*
-__tests__/bigfile/10mbfile.txt
+__fixtures__/workspace/runner/*
+__fixtures__/workspace/bigfile/10mbfile.txt
 lib/**/*
 
 .idea
 key.json
+
+# Never committed: scratch docs and superpowers workflow state
+docs/
+.superpowers/

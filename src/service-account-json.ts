@@ -1,4 +1,4 @@
-import { IIAmCredentials } from '@yandex-cloud/nodejs-sdk/dist/types'
+import { IIAmCredentials } from '@yandex-cloud/nodejs-sdk/dist/types.js'
 
 export interface ServiceAccountJsonFileContents {
     id: string
