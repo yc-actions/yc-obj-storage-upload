@@ -91,16 +91,10 @@ export function createTokenService(sessionConfig: SessionConfig): TokenService {
     }
     return {
         getToken: async () => {
-            // sessionConfig is narrowed against the full SDK SessionConfig union here
-            // (unlike the pre-split code, where it was narrowed by the assignments in
-            // run()'s credential chain), so TypeScript can no longer prove `iamToken`
-            // exists on every remaining member. The cast is compile-time only and does
-            // not change the runtime property access below.
-            const iamToken = (sessionConfig as { iamToken?: string }).iamToken
-            if (!iamToken) {
+            if (!('iamToken' in sessionConfig) || !sessionConfig.iamToken) {
                 throw new Error('No IAM token provided')
             }
-            return iamToken
+            return sessionConfig.iamToken
         }
     }
 }
