@@ -34,7 +34,7 @@ const config = {
         file: 'dist/index.js',
         format: 'es',
         inlineDynamicImports: true,
-        sourcemap: true
+        sourcemap: false
     },
     // @rollup/plugin-json is required because mime-types -> mime-db does
     // `require('./db.json')`. @rollup/plugin-commonjs rewrites that into an
