@@ -1,4 +1,4 @@
-## GitHub Action to upload files to Yandex Cloud Object Storage
+# GitHub Action to upload files to Yandex Cloud Object Storage
 
 [![Coverage](./badges/coverage.svg)](./badges/coverage.svg)
 
@@ -87,7 +87,7 @@ The `root` input sets the folder whose contents are uploaded; keys in the bucket
 
 `exclude` patterns are matched against the same path as `include`: the file's location relative to `root`, which is also
 the key it would get in the bucket. A pattern containing a slash is therefore anchored at `root` —
-`exclude: assets/*.map` drops `assets/app.js.map` but nothing deeper. A pattern without a slash matches the file name at
+`exclude: assets/*.map` drops `assets/app.js.map` but nothing deeper. A pattern without a slash matches the filename at
 any depth, so `exclude: '*.map'` drops every source map, wherever it sits.
 
 <!-- prettier-ignore -->

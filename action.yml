@@ -36,7 +36,7 @@ inputs:
     exclude:
         description:
             'Exclude patterns, one per line. Matched against the file path relative to `root`, the same as `include`, so
-            a pattern containing a slash is anchored at `root`. A pattern without a slash matches the file name at any
+            a pattern containing a slash is anchored at `root`. A pattern without a slash matches the filename at any
             depth.'
         default: ''
         required: false
