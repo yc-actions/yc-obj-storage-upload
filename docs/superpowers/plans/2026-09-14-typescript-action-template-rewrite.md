@@ -1334,6 +1334,12 @@ const config = {
         esModule: true,
         file: 'dist/index.js',
         format: 'es',
+        // The AWS SDK credential-provider chain (fromSSO/fromIni/fromProcess/
+        // fromWebIdentity) and @smithy/core's event-streams submodule reach their
+        // targets with dynamic import(), which otherwise makes Rollup demand
+        // output.dir instead of output.file. Every module reached this way has no
+        // top-level side effects, so inlining and evaluating it eagerly is safe.
+        inlineDynamicImports: true,
         sourcemap: true
     },
     plugins: [

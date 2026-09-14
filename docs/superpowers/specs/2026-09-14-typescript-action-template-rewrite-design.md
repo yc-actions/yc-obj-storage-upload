@@ -207,6 +207,13 @@ condition, `node-resolve` can pick a browser build whose crypto and stream shims
 under the Actions runner. `@rollup/plugin-json` is likewise an addition — `@grpc/grpc-js` and
 `protobufjs` import `package.json` for version reporting.
 
+`output.inlineDynamicImports: true` is a fourth addition, forced by a real build error rather
+than chosen up front: `@aws-sdk/credential-provider-node`'s SSO/ini/process/web-identity branches
+and `@smithy/core`'s event-streams submodule reach their targets with dynamic `import()`, which
+pushes Rollup toward multi-chunk output — incompatible with the single `output.file` this bundle
+needs. Inlining is safe because every module reached that way is free of top-level side effects
+(no native bindings, no eager I/O), so evaluating them eagerly instead of lazily costs nothing.
+
 ## Test harness
 
 `jest.config.js` is the template's: `preset: ts-jest`, `extensionsToTreatAsEsm: ['.ts']`,
