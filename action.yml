@@ -2,67 +2,72 @@ name: 'YC Object Storage Upload'
 description: 'GitHub Action to upload files to Yandex Cloud Object Storage.'
 author: 'Nikolay Matrosov'
 inputs:
-  yc-sa-json-credentials:
-    required: false
-    description: 'JSON containing authorized key for Service Account.
-      Either this or `yc-iam-token` or `yc-sa-id` should be provided.
-      More info https://cloud.yandex.ru/docs/container-registry/operations/authentication#sa-json'
-  yc-iam-token:
-    required: false
-    description: 'IAM token for Yandex Cloud. 
-      Either this or `yc-sa-json-credentials` or `yc-sa-id` should be provided.
-      More info https://yandex.cloud/ru/docs/iam/concepts/authorization/iam-token'
-  yc-sa-id:
-    required: false
-    description: 'Service Account ID. Will be uses to exchange GitHub token to Yandex Cloud token.
-      Either this or `yc-iam-token` or `yc-sa-json-credentials` should be provided.
-      More info https://yandex.cloud/ru/docs/iam/concepts/workload-identity'
-  bucket:
-    description: 'Object Storage bucket name for code'
-    default: ''
-    required: true
-  prefix:
-    description: 'Prefix that will added to all keys.'
-    required: false
-    default: ''
-  root:
-    description: 'Path that will considered as root.'
-    required: true
-  include:
-    description: 'Patterns to include. Multiline'
-    default: '*'
-    required: false
-  exclude:
-    description: 'Exclude patterns. Multiline'
-    default: ''
-    required: false
-  clear:
-    description: 'Clear bucket before upload.'
-    default: 'false'
-    required: false
-  cache-control:
-    description: 'Cache-Control header value. Multiline. Path mapped to value.'
-    default: ''
-    required: false
-  concurrency:
-    description: 'Maximum number of files uploaded in parallel. Values below 1 are clamped to 1, values above 256 are clamped to 256.'
-    default: '16'
-    required: false
-  skip-unchanged:
-    description: 'When true, skip uploading a file if the remote object''s ETag matches the local file''s MD5.
-      Content-only comparison: a change to cache-control alone will not trigger a re-upload, and multipart
-      objects are always re-uploaded.'
-    default: 'false'
-    required: false
-  fail-on-error:
-    description: 'When true, the action fails if one or more files could not be uploaded (after attempting every
-      file). When false (default) upload errors are only logged, preserving the previous behavior.'
-    default: 'false'
-    required: false
+    yc-sa-json-credentials:
+        required: false
+        description:
+            'JSON containing authorized key for Service Account. Either this or `yc-iam-token` or `yc-sa-id` should be
+            provided. More info https://cloud.yandex.ru/docs/container-registry/operations/authentication#sa-json'
+    yc-iam-token:
+        required: false
+        description:
+            'IAM token for Yandex Cloud. Either this or `yc-sa-json-credentials` or `yc-sa-id` should be provided. More
+            info https://yandex.cloud/ru/docs/iam/concepts/authorization/iam-token'
+    yc-sa-id:
+        required: false
+        description:
+            'Service Account ID. Will be uses to exchange GitHub token to Yandex Cloud token. Either this or
+            `yc-iam-token` or `yc-sa-json-credentials` should be provided. More info
+            https://yandex.cloud/ru/docs/iam/concepts/workload-identity'
+    bucket:
+        description: 'Object Storage bucket name for code'
+        default: ''
+        required: true
+    prefix:
+        description: 'Prefix that will added to all keys.'
+        required: false
+        default: ''
+    root:
+        description: 'Path that will considered as root.'
+        required: true
+    include:
+        description: 'Patterns to include. Multiline'
+        default: '*'
+        required: false
+    exclude:
+        description: 'Exclude patterns. Multiline'
+        default: ''
+        required: false
+    clear:
+        description: 'Clear bucket before upload.'
+        default: 'false'
+        required: false
+    cache-control:
+        description: 'Cache-Control header value. Multiline. Path mapped to value.'
+        default: ''
+        required: false
+    concurrency:
+        description:
+            'Maximum number of files uploaded in parallel. Values below 1 are clamped to 1, values above 256 are clamped
+            to 256.'
+        default: '16'
+        required: false
+    skip-unchanged:
+        description:
+            "When true, skip uploading a file if the remote object's ETag matches the local file's MD5. Content-only
+            comparison: a change to cache-control alone will not trigger a re-upload, and multipart objects are always
+            re-uploaded."
+        default: 'false'
+        required: false
+    fail-on-error:
+        description:
+            'When true, the action fails if one or more files could not be uploaded (after attempting every file). When
+            false (default) upload errors are only logged, preserving the previous behavior.'
+        default: 'false'
+        required: false
 
 branding:
-  color: blue
-  icon: upload-cloud
+    color: blue
+    icon: upload-cloud
 runs:
-  using: 'node24'
-  main: 'dist/index.js'
+    using: 'node24'
+    main: 'dist/index.js'

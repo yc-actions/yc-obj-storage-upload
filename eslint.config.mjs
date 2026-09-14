@@ -16,7 +16,9 @@ const compat = new FlatCompat({
 
 export default [
     {
-        ignores: ['**/coverage', '**/dist', '**/node_modules']
+        // __fixtures__/workspace holds upload test payloads (a fake handler, a one-line
+        // console.log) read and hashed by the characterization test, not source to lint.
+        ignores: ['**/coverage', '**/dist', '**/node_modules', '__fixtures__/workspace']
     },
     ...compat.extends(
         'eslint:recommended',
@@ -49,22 +51,15 @@ export default [
                     allowDefaultProject: [
                         '__fixtures__/*.ts',
                         '__tests__/*.ts',
-                        // tsconfig.json excludes __fixtures__ and __tests__, so these workspace
-                        // data fixtures (upload test payloads, not real source) also fall back to
-                        // the default project. '**' globs are rejected by projectService, so each
-                        // directory depth needs its own entry.
-                        '__fixtures__/workspace/src/*.js',
-                        '__fixtures__/workspace/src_with_subfolders/*.js',
-                        '__fixtures__/workspace/src_with_subfolders/*/*.js',
                         'eslint.config.mjs',
                         'jest.config.js',
                         'rollup.config.ts'
                     ],
                     // tsconfig.json's `exclude` keeps __fixtures__ and __tests__ out of the real
-                    // project, so all of __fixtures__/*.ts, __tests__/*.ts, the three root config
-                    // files, and the workspace fixtures above fall back to the default project at
-                    // once (13 files), past typescript-eslint's default cap of 8.
-                    maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 20
+                    // project, so __fixtures__/*.ts (2), __tests__/*.ts (5), and the three root
+                    // config files above (3) all fall back to the default project at once (10
+                    // files), past typescript-eslint's default cap of 8.
+                    maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 10
                 },
                 tsconfigRootDir: import.meta.dirname
             }

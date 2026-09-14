@@ -4,4 +4,3 @@ node_modules/
 coverage/
 package-lock.json
 __fixtures__/workspace/
-action.yml
