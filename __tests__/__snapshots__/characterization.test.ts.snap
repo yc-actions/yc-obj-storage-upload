@@ -186,7 +186,7 @@ exports[`characterization fail-on-error attempts every file then fails 1`] = `
     },
   ],
   "failed": [
-    "Failed to upload 3 file(s): <workspace>/src/func.js, <workspace>/src/exclude.yaml, <workspace>/src/exclude.txt",
+    "Failed to upload 3 file(s): <workspace>/src/exclude.txt, <workspace>/src/exclude.yaml, <workspace>/src/func.js",
   ],
 }
 `;

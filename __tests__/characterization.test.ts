@@ -74,13 +74,27 @@ function normalize(value: unknown): unknown {
 }
 
 // Failure messages embed absolute-ish workspace paths, which change when the
-// fixture tree moves in Task 2. The requests themselves never do.
+// fixture tree moves in Task 2, and list failed files in whatever order the
+// concurrent uploads happened to reject in, which real async I/O scheduling
+// decides and this test cannot pin down. The requests themselves never do
+// either, so both get normalized before the message is trusted as a snapshot.
 function scrub(message: unknown): unknown {
     const workspace = process.env.GITHUB_WORKSPACE ?? ''
-    if (typeof message !== 'string' || workspace === '') {
+    if (typeof message !== 'string') {
         return message
     }
-    return message.split(workspace).join('<workspace>')
+    const withoutWorkspace = workspace === '' ? message : message.split(workspace).join('<workspace>')
+    const marker = 'file(s): '
+    const markerIndex = withoutWorkspace.indexOf(marker)
+    if (markerIndex === -1) {
+        return withoutWorkspace
+    }
+    const prefix = withoutWorkspace.slice(0, markerIndex + marker.length)
+    const files = withoutWorkspace
+        .slice(markerIndex + marker.length)
+        .split(', ')
+        .sort()
+    return prefix + files.join(', ')
 }
 
 describe('characterization', () => {
@@ -211,6 +225,19 @@ describe('characterization', () => {
     test('clear empties the bucket before uploading', async () => {
         applyInputs({ clear: 'true' })
         await run()
+
+        // The `calls` snapshot below is sorted by command name, so it cannot see
+        // temporal order and would stay byte-identical even if a future module
+        // split ran upload before clearBucket finished. Assert the real order on
+        // the raw, unsorted log so that regression is actually caught.
+        const lastClearIndex = recorded.reduce(
+            (last, entry, index) =>
+                entry.command === 'ListObjectsV2Command' || entry.command === 'DeleteObjectsCommand' ? index : last,
+            -1
+        )
+        const firstPutIndex = recorded.findIndex(entry => entry.command === 'PutObjectCommand')
+        expect(lastClearIndex).toBeLessThan(firstPutIndex)
+
         expect(snapshotOf()).toMatchSnapshot()
     })
 

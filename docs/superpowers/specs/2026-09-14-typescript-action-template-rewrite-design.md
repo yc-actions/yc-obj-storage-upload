@@ -282,10 +282,19 @@ snapshot:
   serializable, but the digest of a fixed fixture file is stable
 - `undefined`-valued keys are dropped and object keys are sorted
 - the `axios.post` URL and payload are recorded in the same list, in call order
+- a `setFailed` message's embedded file list is sorted before comparison; concurrent uploads
+  reject in whatever order real async I/O scheduling picks, which is not reproducible across
+  machines or Node versions, while the workspace-path substitution handles the other
+  non-reproducible part of the same message
 
 Concurrency makes the *order* of per-file commands non-deterministic, so the recorded list is
-sorted by `(command, Key)` before comparison. Ordering between phases is preserved by
-construction: the whole `clearBucket` sequence completes before any upload starts.
+sorted by `(command, Key)` before comparison. That sort also discards ordering between phases,
+so it cannot by itself tell a correct `clearBucket`-then-`upload` sequence from an accidentally
+inverted one — a future module split that ran them the wrong way round would still produce the
+same sorted, byte-identical snapshot. The `clear` scenario therefore carries a second, explicit
+assertion against the raw, unsorted recording: the last `ListObjectsV2Command`/
+`DeleteObjectsCommand` entry's index must be less than the first `PutObjectCommand` entry's
+index. This is asserted, not assumed by construction.
 
 Because the spy is on `S3Client.prototype`, the recording mechanism itself survives the CJS to
 ESM move. The gate after the rewrite is that the snapshot reproduces with no diff. Any diff is
