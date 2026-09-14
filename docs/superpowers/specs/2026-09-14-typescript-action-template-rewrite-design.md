@@ -122,7 +122,9 @@ revision), `.nvmrc`, `.prettierrc.json`, and from `dist/` the ncc-specific `lice
 `sourcemap-register.js` plus the `proto/`, `xds/`, and `protoc-gen-validate/` trees.
 
 Untouched: `.mergify.yml`, `.github/dependabot.yml`, `.husky/pre-commit`, `.gitattributes`,
-`README.md` prose, `LICENSE`, and every input and output in `action.yml`.
+`LICENSE`, and every input and output in `action.yml`. `README.md` prose is untouched apart
+from the five `yc-actions/yc-obj-storage-upload@v4` references in its usage examples, which
+become `@v5` with the major bump.
 
 `__tests__/cache-contol.test.ts` is renamed to `__tests__/cache-control.test.ts`, fixing the
 typo while the file is being touched anyway.
@@ -150,6 +152,16 @@ together what are now two separate branches in `run()` (building `sessionConfig`
 `tokenService` from it). The intermediate `SessionConfig` value exists only to be re-inspected
 three lines later, so it does not survive the move; the resulting error messages and their
 order are preserved exactly.
+
+Folding those branches drops one unreachable line. The current `getToken` closure throws
+`No IAM token provided` when `sessionConfig.iamToken` is falsy, but every path that reaches it
+has already assigned a non-empty token: the `yc-iam-token` branch is guarded by `!== ''`, and
+`exchangeToken` throws unless `res.data.access_token` is truthy. The message is therefore
+unreachable today and is not carried forward.
+
+The fold also moves `new IamTokenService(...)` ahead of `readInputs()`, so it now runs even
+when a required input is missing. Its constructor is pure field assignment — no channel, no
+network, no I/O — so nothing observable changes.
 
 After the split, `main.ts` holds only: `resolveTokenService`, `readInputs`, `createS3Client`,
 the optional `clearBucket`, `upload`, and the `try/catch` that calls `setFailed`.
@@ -184,18 +196,29 @@ defines `require`, `__filename`, and `__dirname` from `import.meta.url`. The Com
 dependencies in this graph (`@yandex-cloud/nodejs-sdk`, `@grpc/grpc-js`, `nice-grpc`,
 `jsonwebtoken`) reference all three, and none exist in an ES module.
 
-Plugins: `@rollup/plugin-typescript`, `@rollup/plugin-node-resolve` with
-`preferBuiltins: true`, `@rollup/plugin-commonjs`, `@rollup/plugin-json`. Output is a single
-`dist/index.js` plus `dist/index.js.map`. No `dist/package.json` is needed — the root
-`package.json` already marks the tree `type: module`.
+Plugins: `@rollup/plugin-typescript`, `@rollup/plugin-node-resolve`, `@rollup/plugin-commonjs`,
+`@rollup/plugin-json`. Output is a single `dist/index.js` plus `dist/index.js.map`. No
+`dist/package.json` is needed — the root `package.json` already marks the tree `type: module`.
+
+`node-resolve` is configured with `preferBuiltins: true` as in the template, plus
+`exportConditions: ['node']`, which the template omits. The AWS SDK v3 and `@smithy/*` packages
+publish browser variants through their exports maps and `browser` fields; without the `node`
+condition, `node-resolve` can pick a browser build whose crypto and stream shims do not work
+under the Actions runner. `@rollup/plugin-json` is likewise an addition — `@grpc/grpc-js` and
+`protobufjs` import `package.json` for version reporting.
 
 ## Test harness
 
 `jest.config.js` is the template's: `preset: ts-jest`, `extensionsToTreatAsEsm: ['.ts']`,
-`resolver: ts-jest-resolver`, `useESM: true`, `tsconfig: 'tsconfig.json'`,
-`collectCoverageFrom: ['./src/**']`, reporters `json-summary`, `text`, `lcov`. The `test`
-script sets `NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1` and
+`resolver: ts-jest-resolver`, `useESM: true`, `tsconfig: 'tsconfig.json'`, reporters
+`json-summary`, `text`, `lcov`. The `test` script sets
+`NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1` and
 `GITHUB_WORKSPACE=__fixtures__/workspace`.
+
+`collectCoverageFrom` keeps this repo's current value, `['./src/**', '!./src/index.ts']`,
+rather than the template's `['./src/**']`. `src/index.ts` is a two-line entrypoint that only
+calls `run()`; including it would move the percentages without measuring anything, and the
+coverage floors below are calibrated against the existing exclusion.
 
 Under ESM, `jest.spyOn` against a module namespace object does not work — the namespace is
 frozen. The tests split into two groups by how much that costs them:
@@ -315,9 +338,15 @@ removed; if the fallback is taken it stays permanently.
 package whose version the bundle is sensitive to, and a direct entry keeps Dependabot pointed
 at it.
 
+Added to `dependencies`: `@smithy/types`, so `FinalizeRequestMiddleware` can be imported from
+its own package instead of through `@aws-sdk/types/dist-types/middleware`. It is a type-only
+import that disappears at build time, and it pairs with the already-direct
+`@smithy/protocol-http`.
+
 Added to `devDependencies`: `rollup`, `@rollup/plugin-commonjs`, `@rollup/plugin-json`,
-`@rollup/plugin-node-resolve`, `@rollup/plugin-typescript`, `ts-jest-resolver`, and
-`@github/local-action`.
+`@rollup/plugin-node-resolve`, `@rollup/plugin-typescript`, `rimraf` (the template's `package`
+script cleans `dist/` with it), `ts-jest-resolver`, `@jest/globals`, `eslint-config-prettier`,
+and `@github/local-action`.
 
 ## Out of scope
 
