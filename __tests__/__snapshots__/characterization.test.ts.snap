@@ -1,0 +1,527 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`characterization cache-control mapping and default are applied 1`] = `
+{
+  "calls": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "CacheControl": "no-cache",
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "CacheControl": "no-cache",
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "CacheControl": "public, max-age=3600",
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization clear empties the bucket before uploading 1`] = `
+{
+  "calls": [
+    {
+      "command": "DeleteObjectsCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Delete": {
+          "Objects": [
+            {
+              "Key": "stale/object.txt",
+            },
+          ],
+        },
+      },
+    },
+    {
+      "command": "ListObjectsV2Command",
+      "input": {
+        "Bucket": "bucket",
+        "MaxKeys": 1000,
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization custom concurrency uploads the same set 1`] = `
+{
+  "calls": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization exclude patterns drop matching files 1`] = `
+{
+  "calls": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization fail-on-error attempts every file then fails 1`] = `
+{
+  "calls": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "failed": [
+    "Failed to upload 3 file(s): <workspace>/src/func.js, <workspace>/src/exclude.yaml, <workspace>/src/exclude.txt",
+  ],
+}
+`;
+
+exports[`characterization iam token credentials 1`] = `
+{
+  "calls": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization include glob walks subdirectories 1`] = `
+{
+  "calls": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:149ff77baf1a45d29e6ac958cca0c84ac899bf614af55254560d03add3bc9d70",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "src_with_subfolders/bXdOv4sbedSkTy8PGMUJ/ivAzMS09Ndx3VPJ8WnNL.js",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "ContentType": "text/plain",
+        "Key": "src_with_subfolders/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "src_with_subfolders/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "src_with_subfolders/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization missing required bucket fails before any request 1`] = `
+{
+  "calls": [],
+  "failed": [
+    "Input required and not supplied: bucket",
+  ],
+}
+`;
+
+exports[`characterization no credentials fails before any request 1`] = `
+{
+  "calls": [],
+  "failed": [
+    "No credentials",
+  ],
+}
+`;
+
+exports[`characterization prefix is prepended to every key 1`] = `
+{
+  "calls": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "ContentType": "text/plain",
+        "Key": "assets/src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "assets/src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "assets/src/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization root drops the folder prefix from keys 1`] = `
+{
+  "calls": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "ContentType": "text/plain",
+        "Key": "exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization sa-json credentials with default inputs 1`] = `
+{
+  "calls": [
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization skip-unchanged skips files whose etag matches 1`] = `
+{
+  "calls": [
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization skip-unchanged uploads files whose etag differs 1`] = `
+{
+  "calls": [
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "HeadObjectCommand",
+      "input": {
+        "Bucket": "bucket",
+        "Key": "src/func.js",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
+
+exports[`characterization workload identity credentials 1`] = `
+{
+  "calls": [
+    {
+      "command": "axios.post",
+      "input": {
+        "payload": {
+          "audience": "test-sa-id",
+          "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+          "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
+          "subject_token": "github-token",
+          "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
+        },
+        "url": "https://auth.yandex.cloud/oauth/token",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2",
+        "Bucket": "bucket",
+        "ContentType": "text/plain",
+        "Key": "src/exclude.txt",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:cce2a5077417bccbabe55d7dec853bf27df04cc77577f81e1c1b75dd5bc8f113",
+        "Bucket": "bucket",
+        "ContentType": "text/yaml",
+        "Key": "src/exclude.yaml",
+      },
+    },
+    {
+      "command": "PutObjectCommand",
+      "input": {
+        "Body": "sha256:ba2f1d0d2bf5d11fdc5e96eb2e049be7d9ed5a0f241e5f413b6e363f3ad0cd1d",
+        "Bucket": "bucket",
+        "ContentType": "text/javascript",
+        "Key": "src/func.js",
+      },
+    },
+  ],
+  "failed": [],
+}
+`;
