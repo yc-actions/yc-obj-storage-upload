@@ -161,6 +161,39 @@ describe('upload', () => {
         expect(keys).toEqual(['src/exclude.yaml', 'src/func.js'])
     })
 
+    // `include` is resolved relative to `root`, but `exclude` is matched against the
+    // workspace-relative path that glob returns. So a slashless pattern matches the
+    // basename (minimatch's matchBase), a pattern anchored with `**/` matches anywhere,
+    // and a pattern that merely contains a slash must spell out the path from the
+    // workspace root — `src/*.txt` silently excludes nothing even though `src/*` is a
+    // valid `include`. These cases pin that asymmetry so a future change to the matching
+    // has to be deliberate.
+    describe.each([
+        { pattern: '**/*.txt', excludes: true },
+        { pattern: '*.txt', excludes: true },
+        { pattern: 'exclude.txt', excludes: true },
+        { pattern: '**/src/*.txt', excludes: true },
+        { pattern: 'src/*.txt', excludes: false },
+        { pattern: 'src/**', excludes: false },
+        { pattern: './src/*.txt', excludes: false }
+    ])('exclude pattern $pattern', ({ pattern, excludes }) => {
+        test(`${excludes ? 'drops' : 'does not drop'} src/exclude.txt`, async () => {
+            const inputs: UploadInputs = {
+                bucket: 'bucket',
+                prefix: '',
+                include: ['./src/*'],
+                exclude: [pattern],
+                root: '.',
+                cacheControl: newCacheControlConfig()
+            }
+
+            await upload(s3client, inputs)
+
+            const keys = mockedSendFn.mock.calls.map(([cmd]) => (cmd as PutObjectCommand).input.Key).sort(strCompare)
+            expect(keys.includes('src/exclude.txt')).toBe(!excludes)
+        })
+    })
+
     test('it should drop folder prefix if sourceRoot provided', async () => {
         const inputs: UploadInputs = {
             bucket: 'bucket',
