@@ -29,6 +29,9 @@ describe('createS3Client', () => {
         expect(getToken).toHaveBeenCalledTimes(1)
         expect(capturedRequest).toBeDefined()
         expect(capturedRequest?.headers['X-YaCloud-SubjectToken']).toBe('stub-iam-token')
-        expect(capturedRequest?.headers['Authorization']).toBeUndefined()
+        // AWS SigV4 signing, if it ran, would set this header lowercase (`authorization`), not
+        // `Authorization` — a case-sensitive lookup on the capitalized key would pass vacuously
+        // whether or not signing actually ran.
+        expect(capturedRequest?.headers['authorization']).toBeUndefined()
     })
 })
