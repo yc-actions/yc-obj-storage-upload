@@ -70,11 +70,11 @@
     "@aws-sdk/middleware-flexible-checksums": "^3.974.44",
     "@grpc/grpc-js": "^1.14.3",
     "@smithy/protocol-http": "^5.3.8",
-    "@yandex-cloud/nodejs-sdk": "^2.9.0",
+    "@yandex-cloud/nodejs-sdk": "^3.2.0",
     "axios": "1.18.1",
     "glob": "^13.0.1",
     "mime-types": "^3.0.2",
-    "minimatch": "10.2.5",
+    "minimatch": "10.2.6",
     "minimist": ">=1.2.8",
     "path-scurry": "^2.0.1"
   },
