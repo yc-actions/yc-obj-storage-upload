@@ -138,7 +138,13 @@ export async function upload(s3Client: S3Client, inputs: UploadInputs): Promise<
             }
             const matches = glob.sync(pathFromSourceRoot, { absolute: false })
             for (const match of matches) {
-                const excluded = patterns.map(p => minimatch(match, p, { matchBase: true })).some(x => x)
+                // Exclude patterns are matched against the path relative to `root` — the same
+                // coordinate system `include` is written in, and the key the file will get.
+                // Matching the workspace-relative path instead made any pattern containing a
+                // slash silently match nothing: `exclude: src/*.txt` dropped no files even
+                // though `include: src/*` is valid.
+                const keyPath = path.relative(root, match)
+                const excluded = patterns.some(p => minimatch(keyPath, p, { matchBase: true }))
                 if (!excluded) {
                     filesToUpload.push(match)
                 }

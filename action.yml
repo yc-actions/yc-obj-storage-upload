@@ -34,7 +34,10 @@ inputs:
         default: '*'
         required: false
     exclude:
-        description: 'Exclude patterns. Multiline'
+        description:
+            'Exclude patterns, one per line. Matched against the file path relative to `root`, the same as `include`, so
+            a pattern containing a slash is anchored at `root`. A pattern without a slash matches the file name at any
+            depth.'
         default: ''
         required: false
     clear:

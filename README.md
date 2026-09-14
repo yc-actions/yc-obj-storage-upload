@@ -85,6 +85,17 @@ The `root` input sets the folder whose contents are uploaded; keys in the bucket
       include: '**/*'
 ```
 
+`exclude` patterns are matched against the same path as `include`: the file's location relative to `root`, which is also
+the key it would get in the bucket. A pattern containing a slash is therefore anchored at `root` —
+`exclude: assets/*.map` drops `assets/app.js.map` but nothing deeper. A pattern without a slash matches the file name at
+any depth, so `exclude: '*.map'` drops every source map, wherever it sits.
+
+<!-- prettier-ignore -->
+> [!NOTE]
+> This changed in v5. Before v5, `exclude` patterns were matched against the path relative to the repository root rather
+> than to `root`, so any pattern containing a slash silently matched nothing. Patterns without a slash, and patterns
+> starting with `**/`, behave as they always did.
+
 ### Clearing the bucket before upload
 
 Use the `clear: true` option to delete all objects from the bucket before uploading files.

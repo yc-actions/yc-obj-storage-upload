@@ -161,20 +161,18 @@ describe('upload', () => {
         expect(keys).toEqual(['src/exclude.yaml', 'src/func.js'])
     })
 
-    // `include` is resolved relative to `root`, but `exclude` is matched against the
-    // workspace-relative path that glob returns. So a slashless pattern matches the
-    // basename (minimatch's matchBase), a pattern anchored with `**/` matches anywhere,
-    // and a pattern that merely contains a slash must spell out the path from the
-    // workspace root — `src/*.txt` silently excludes nothing even though `src/*` is a
-    // valid `include`. These cases pin that asymmetry so a future change to the matching
-    // has to be deliberate.
+    // Both `include` and `exclude` are written relative to `root`, so a pattern that
+    // contains a slash is anchored at `root` and matches the key the file would get.
+    // A slashless pattern still matches the basename at any depth (minimatch's matchBase),
+    // and `**/` still matches anywhere. A leading `./` is not normalized away, so it does
+    // not match — the documented examples do not use that form.
     describe.each([
         { pattern: '**/*.txt', excludes: true },
         { pattern: '*.txt', excludes: true },
         { pattern: 'exclude.txt', excludes: true },
         { pattern: '**/src/*.txt', excludes: true },
-        { pattern: 'src/*.txt', excludes: false },
-        { pattern: 'src/**', excludes: false },
+        { pattern: 'src/*.txt', excludes: true },
+        { pattern: 'src/**', excludes: true },
         { pattern: './src/*.txt', excludes: false }
     ])('exclude pattern $pattern', ({ pattern, excludes }) => {
         test(`${excludes ? 'drops' : 'does not drop'} src/exclude.txt`, async () => {

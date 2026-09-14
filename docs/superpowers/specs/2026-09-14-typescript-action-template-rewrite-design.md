@@ -154,6 +154,22 @@ reached, surfacing a 400 as axios's generic `Request failed with status code 400
 resolves for every status and the existing check does its job. The characterization snapshot's workload-identity
 scenario stubs a 200 response, so this does not move it.
 
+A third deliberate change, decided after the migration was reviewed and taken because v5 is a major release: **`exclude`
+patterns are now matched against the path relative to `root`** rather than the path relative to the repository root.
+`include` was always joined with `root`, so the two inputs were written in different coordinate systems, and any
+`exclude` pattern that merely contained a slash silently matched nothing — `exclude: src/*.txt` dropped no files even
+though `include: src/*` was valid.
+
+The fix matches against `path.relative(root, match)`, which is also the object key the file would receive before
+`prefix` is applied, so `exclude` now filters on exactly what `include` selected. The change is strictly additive for
+patterns that already worked: slashless patterns still match the basename at any depth through minimatch's `matchBase`,
+and `**/`-anchored patterns still match anywhere. Verified pattern by pattern in `__tests__/upload.test.ts`, and the
+characterization snapshot — whose exclude scenario uses `**/*.txt` — does not move.
+
+Joining the pattern with `root` instead, the obvious first idea, was rejected: it gives every pattern a slash, which
+disables `matchBase`, so `*.txt` would stop matching nested files and start meaning "only directly in `root`" — a
+regression on the most common form.
+
 After the split, `main.ts` holds only: `resolveTokenService`, `readInputs`, `createS3Client`, the optional
 `clearBucket`, `upload`, and the `try/catch` that calls `setFailed`.
 
