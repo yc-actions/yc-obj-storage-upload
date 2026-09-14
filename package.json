@@ -7,14 +7,14 @@
   },
   "scripts": {
     "bundle": "npm run format:write && npm run package",
-    "ci-test": "jest",
+    "ci-test": "GITHUB_WORKSPACE=__fixtures__/workspace jest",
     "coverage": "make-coverage-badge --output-path ./badges/coverage.svg",
     "format:write": "prettier --write **/*.ts",
     "format:check": "prettier --check **/*.ts",
     "lint": "eslint src/**/*.ts --fix",
     "package": "ncc build src/index.ts --license licenses.txt",
     "package:watch": "npm run package -- --watch",
-    "test": "GITHUB_WORKSPACE=__tests__ jest",
+    "test": "GITHUB_WORKSPACE=__fixtures__/workspace jest",
     "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package",
     "git-tag": "git tag v`cat package.json | jq -r '.version' | awk -F. '{print $1}'` -f &&  git tag v`cat package.json | jq -r '.version'` -f",
     "prepare": "husky"

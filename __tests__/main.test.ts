@@ -421,7 +421,7 @@ describe('upload', () => {
                 if (cmd instanceof HeadObjectCommand) {
                     const key = cmd.input.Key as string
                     const md5 = createHash('md5')
-                        .update(readFileSync(join('__tests__', key)))
+                        .update(readFileSync(join(env.GITHUB_WORKSPACE ?? '', key)))
                         .digest('hex')
                     return { ETag: `"${md5}"` }
                 }
