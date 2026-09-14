@@ -1,9 +1,9 @@
 import { getInput, setFailed } from '@actions/core'
-import { readInputs } from './action-inputs'
-import { resolveTokenService } from './auth'
-import { clearBucket } from './clear-bucket'
-import { createS3Client } from './s3-client'
-import { upload } from './upload'
+import { readInputs } from './action-inputs.js'
+import { resolveTokenService } from './auth.js'
+import { clearBucket } from './clear-bucket.js'
+import { createS3Client } from './s3-client.js'
+import { upload } from './upload.js'
 
 export async function run(): Promise<void> {
     try {

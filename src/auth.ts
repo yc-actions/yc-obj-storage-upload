@@ -2,7 +2,7 @@ import { getIDToken, info } from '@actions/core'
 import { IamTokenService } from '@yandex-cloud/nodejs-sdk/dist/token-service/iam-token-service'
 import { TokenService } from '@yandex-cloud/nodejs-sdk/dist/types'
 import axios from 'axios'
-import { fromServiceAccountJsonFile } from './service-account-json'
+import { fromServiceAccountJsonFile } from './service-account-json.js'
 
 export async function exchangeToken(token: string, saId: string): Promise<string> {
     info(`Exchanging token for service account ${saId}`)

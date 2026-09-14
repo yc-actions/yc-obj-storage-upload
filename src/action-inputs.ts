@@ -1,6 +1,6 @@
 import { getBooleanInput, getInput, getMultilineInput } from '@actions/core'
-import { CacheControlConfig, parseCacheControlFormats } from './cache-control'
-import { parseConcurrency } from './upload'
+import { CacheControlConfig, parseCacheControlFormats } from './cache-control.js'
+import { parseConcurrency } from './upload.js'
 
 export type ActionInputs = {
     bucket: string

@@ -1,20 +1,21 @@
 {
   "name": "yc-actions-yc-obj-storage-upload",
   "version": "4.0.0",
+  "type": "module",
   "description": "GitHub Action to upload files to Yandex Cloud Object Storage.",
   "exports": {
     ".": "./dist/index.js"
   },
   "scripts": {
     "bundle": "npm run format:write && npm run package",
-    "ci-test": "GITHUB_WORKSPACE=__fixtures__/workspace jest",
+    "ci-test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 GITHUB_WORKSPACE=__fixtures__/workspace npx jest",
     "coverage": "make-coverage-badge --output-path ./badges/coverage.svg",
     "format:write": "prettier --write **/*.ts",
     "format:check": "prettier --check **/*.ts",
     "lint": "eslint src/**/*.ts --fix",
     "package": "ncc build src/index.ts --license licenses.txt",
     "package:watch": "npm run package -- --watch",
-    "test": "GITHUB_WORKSPACE=__fixtures__/workspace jest",
+    "test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 GITHUB_WORKSPACE=__fixtures__/workspace npx jest",
     "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package",
     "git-tag": "git tag v`cat package.json | jq -r '.version' | awk -F. '{print $1}'` -f &&  git tag v`cat package.json | jq -r '.version'` -f",
     "prepare": "husky"
@@ -32,36 +33,6 @@
   ],
   "author": "Nikolay Matrosov",
   "license": "MIT",
-  "jest": {
-    "preset": "ts-jest",
-    "verbose": true,
-    "clearMocks": true,
-    "testEnvironment": "node",
-    "moduleFileExtensions": [
-      "js",
-      "ts"
-    ],
-    "testMatch": [
-      "**/*.test.ts"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/dist/"
-    ],
-    "transform": {
-      "^.+\\.ts$": "ts-jest"
-    },
-    "coverageReporters": [
-      "json-summary",
-      "text",
-      "lcov"
-    ],
-    "collectCoverage": true,
-    "collectCoverageFrom": [
-      "./src/**",
-      "!./src/index.ts"
-    ]
-  },
   "dependencies": {
     "@actions/core": "^2.0.3",
     "@actions/github": "^9.0.0",
@@ -82,6 +53,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.2",
+    "@jest/globals": "^30.5.1",
     "@stylistic/eslint-plugin-ts": "^4.4.1",
     "@swc/cli": "^0.8.0",
     "@swc/core": "^1.15.41",
@@ -109,6 +81,7 @@
     "prettier": "3.8.3",
     "prettier-eslint": "^16.4.2",
     "ts-jest": "^29.4.6",
+    "ts-jest-resolver": "^2.0.1",
     "typescript": "^5.9.3"
   },
   "engines": {

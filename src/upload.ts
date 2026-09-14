@@ -12,7 +12,7 @@ import { glob } from 'glob'
 import mimeTypes from 'mime-types'
 import { minimatch } from 'minimatch'
 import path from 'node:path'
-import { CacheControlConfig, getCacheControlValue } from './cache-control'
+import { CacheControlConfig, getCacheControlValue } from './cache-control.js'
 
 export interface UploadInputs {
     include: string[]

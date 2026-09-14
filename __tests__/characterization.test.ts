@@ -1,4 +1,4 @@
-import * as core from '@actions/core'
+import { jest } from '@jest/globals'
 import {
     DeleteObjectsCommand,
     HeadObjectCommand,
@@ -9,7 +9,13 @@ import {
 import { createHash } from 'crypto'
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { run } from '../src/main'
+import * as core from '../__fixtures__/core.js'
+import * as axios from '../__fixtures__/axios.js'
+
+jest.unstable_mockModule('@actions/core', () => core)
+jest.unstable_mockModule('axios', () => axios)
+
+const { run } = await import('../src/main.js')
 
 type Recorded = { command: string; input: unknown }
 type HeadBehavior = 'missing' | 'match' | 'differ'
@@ -102,12 +108,12 @@ describe('characterization', () => {
     let headBehavior: HeadBehavior
     let putFails: boolean
 
-    let getInputMock: jest.SpyInstance
-    let getMultilineInputMock: jest.SpyInstance
-    let getBooleanInputMock: jest.SpyInstance
-    let getIDTokenMock: jest.SpyInstance
-    let setFailedMock: jest.SpyInstance
-    let axiosPostMock: jest.SpyInstance
+    let getInputMock: jest.Mock
+    let getMultilineInputMock: jest.Mock
+    let getBooleanInputMock: jest.Mock
+    let getIDTokenMock: jest.Mock
+    let setFailedMock: jest.Mock
+    let axiosPostMock: jest.Mock
 
     function applyInputs(overrides: Record<string, string> = {}): void {
         const inputs: Record<string, string> = { ...baseInputs, ...overrides }
@@ -173,18 +179,12 @@ describe('characterization', () => {
             return { ETag: '"stub-etag"' }
         })
 
-        getInputMock = jest.spyOn(core, 'getInput')
-        getMultilineInputMock = jest.spyOn(core, 'getMultilineInput')
-        getBooleanInputMock = jest.spyOn(core, 'getBooleanInput')
-        getIDTokenMock = jest.spyOn(core, 'getIDToken')
-        setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
-        axiosPostMock = jest.spyOn(require('axios'), 'post')
-
-        jest.spyOn(core, 'info').mockImplementation()
-        jest.spyOn(core, 'debug').mockImplementation()
-        jest.spyOn(core, 'error').mockImplementation()
-        jest.spyOn(core, 'startGroup').mockImplementation()
-        jest.spyOn(core, 'endGroup').mockImplementation()
+        getInputMock = core.getInput
+        getMultilineInputMock = core.getMultilineInput
+        getBooleanInputMock = core.getBooleanInput
+        getIDTokenMock = core.getIDToken
+        setFailedMock = core.setFailed
+        axiosPostMock = axios.post
 
         applyInputs()
     })
