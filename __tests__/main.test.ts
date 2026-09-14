@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals'
-import { ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3'
+import { S3Client } from '@aws-sdk/client-s3'
 import * as core from '../__fixtures__/core.js'
 import * as axios from '../__fixtures__/axios.js'
 

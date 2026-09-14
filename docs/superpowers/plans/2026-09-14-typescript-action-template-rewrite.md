@@ -1,22 +1,30 @@
 # TypeScript Action Template Rewrite Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
+> superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Move `yc-actions/yc-obj-storage-upload` onto the `actions/typescript-action` layout and harness — ESM source, Rollup bundle, `__fixtures__`/`__tests__` split, template CI — without changing a single request the action issues.
+**Goal:** Move `yc-actions/yc-obj-storage-upload` onto the `actions/typescript-action` layout and harness — ESM source,
+Rollup bundle, `__fixtures__`/`__tests__` split, template CI — without changing a single request the action issues.
 
-**Architecture:** A characterization snapshot is recorded against the current code first and must reproduce unchanged after every later task. The 350-line `src/main.ts` then splits into six modules while still CommonJS, so the refactor and the ESM switch are never in flight at the same time. ESM, then Rollup, then scaffolding, then CI, then cleanup.
+**Architecture:** A characterization snapshot is recorded against the current code first and must reproduce unchanged
+after every later task. The 350-line `src/main.ts` then splits into six modules while still CommonJS, so the refactor
+and the ESM switch are never in flight at the same time. ESM, then Rollup, then scaffolding, then CI, then cleanup.
 
-**Tech Stack:** TypeScript 5.9 (NodeNext), Node 24, Jest 30 + ts-jest in ESM mode, Rollup 4, ESLint 9 flat config, Prettier 3, AWS SDK v3, `@yandex-cloud/nodejs-sdk` v3.
+**Tech Stack:** TypeScript 5.9 (NodeNext), Node 24, Jest 30 + ts-jest in ESM mode, Rollup 4, ESLint 9 flat config,
+Prettier 3, AWS SDK v3, `@yandex-cloud/nodejs-sdk` v3.
 
-**Design spec:** [`docs/superpowers/specs/2026-09-14-typescript-action-template-rewrite-design.md`](../specs/2026-09-14-typescript-action-template-rewrite-design.md)
+**Design spec:**
+[`docs/superpowers/specs/2026-09-14-typescript-action-template-rewrite-design.md`](../specs/2026-09-14-typescript-action-template-rewrite-design.md)
 
 ## Global Constraints
 
 - Branch: `feat/typescript-action-template`. Everything lands here; no commits to `main`.
 - `action.yml` inputs, outputs, `branding`, and `runs.using: 'node24'` must not change.
-- Prettier settings stay at this repo's values: `printWidth: 120`, `tabWidth: 4`, `arrowParens: avoid`, `semi: false`, `singleQuote: true`, `trailingComma: none`, `bracketSameLine: true`, `endOfLine: lf`.
+- Prettier settings stay at this repo's values: `printWidth: 120`, `tabWidth: 4`, `arrowParens: avoid`, `semi: false`,
+  `singleQuote: true`, `trailingComma: none`, `bracketSameLine: true`, `endOfLine: lf`.
 - Node floor stays `>=24`. `.node-version` contains `24.9.0`.
-- After every task from Task 2 onward, `__tests__/__snapshots__/characterization.test.ts.snap` must be byte-identical to the version committed in Task 1. `git diff __tests__/__snapshots__/` returning empty is the gate.
+- After every task from Task 2 onward, `__tests__/__snapshots__/characterization.test.ts.snap` must be byte-identical to
+  the version committed in Task 1. `git diff __tests__/__snapshots__/` returning empty is the gate.
 - Never run `jest -u` / `--updateSnapshot` after Task 1. A snapshot diff is a finding, not a chore.
 - The pre-commit hook (`.husky/pre-commit`) runs `npm run all`. Let it run on every code commit in this plan.
 - Coverage floors (added in Task 8, measured on the current code): lines 90, statements 90, functions 90, branches 80.
@@ -28,35 +36,40 @@
 
 **Created:**
 
-| File | Responsibility |
-| --- | --- |
-| `__tests__/characterization.test.ts` | Records every S3 command and token-exchange request `run()` issues, per scenario. The regression net. |
-| `src/action-inputs.ts` | `ActionInputs` type and `readInputs()`. |
-| `src/auth.ts` | `exchangeToken()` and `resolveTokenService()` — the three credential paths. |
-| `src/s3-client.ts` | `createS3Client()` — client construction plus the YC auth middleware. |
-| `src/upload.ts` | `upload()`, `runPool()`, `parseConcurrency()`, and the private file/glob helpers. |
-| `src/clear-bucket.ts` | `clearBucket()`. |
-| `__fixtures__/core.ts` | `jest.fn()` doubles for every `@actions/core` export the source uses. |
-| `__fixtures__/axios.ts` | `jest.fn()` double for `axios.post`, with a default export. |
-| `__fixtures__/workspace/**` | Test data moved out of `__tests__/`. |
-| `__tests__/upload.test.ts` | The `upload` suite, split out of `main.test.ts`. |
-| `__tests__/clear-bucket.test.ts` | The `clearBucket` suite, split out of `main.test.ts`. |
-| `rollup.config.ts` | ESM bundle config plus the `require`/`__filename`/`__dirname` banner. |
-| `jest.config.js` | ESM Jest config (replaces the `jest` key in `package.json`). |
-| `.node-version`, `.prettierrc.yml`, `.env.example` | Template scaffolding. |
-| `.markdown-lint.yml`, `.yaml-lint.yml`, `actionlint.yml` | Root linter configs. |
-| `.vscode/extensions.json`, `.vscode/launch.json` | Template editor config. |
-| `.github/workflows/ci.yml`, `.github/workflows/linter.yml` | Template CI. |
+| File                                                       | Responsibility                                                                                        |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `__tests__/characterization.test.ts`                       | Records every S3 command and token-exchange request `run()` issues, per scenario. The regression net. |
+| `src/action-inputs.ts`                                     | `ActionInputs` type and `readInputs()`.                                                               |
+| `src/auth.ts`                                              | `exchangeToken()` and `resolveTokenService()` — the three credential paths.                           |
+| `src/s3-client.ts`                                         | `createS3Client()` — client construction plus the YC auth middleware.                                 |
+| `src/upload.ts`                                            | `upload()`, `runPool()`, `parseConcurrency()`, and the private file/glob helpers.                     |
+| `src/clear-bucket.ts`                                      | `clearBucket()`.                                                                                      |
+| `__fixtures__/core.ts`                                     | `jest.fn()` doubles for every `@actions/core` export the source uses.                                 |
+| `__fixtures__/axios.ts`                                    | `jest.fn()` double for `axios.post`, with a default export.                                           |
+| `__fixtures__/workspace/**`                                | Test data moved out of `__tests__/`.                                                                  |
+| `__tests__/upload.test.ts`                                 | The `upload` suite, split out of `main.test.ts`.                                                      |
+| `__tests__/clear-bucket.test.ts`                           | The `clearBucket` suite, split out of `main.test.ts`.                                                 |
+| `rollup.config.ts`                                         | ESM bundle config plus the `require`/`__filename`/`__dirname` banner.                                 |
+| `jest.config.js`                                           | ESM Jest config (replaces the `jest` key in `package.json`).                                          |
+| `.node-version`, `.prettierrc.yml`, `.env.example`         | Template scaffolding.                                                                                 |
+| `.markdown-lint.yml`, `.yaml-lint.yml`, `actionlint.yml`   | Root linter configs.                                                                                  |
+| `.vscode/extensions.json`, `.vscode/launch.json`           | Template editor config.                                                                               |
+| `.github/workflows/ci.yml`, `.github/workflows/linter.yml` | Template CI.                                                                                          |
 
-**Modified:** `src/main.ts` (shrinks to orchestration), `src/index.ts` (`.js` extension), `__tests__/main.test.ts` (only the `run` suite remains, ESM mocking), `package.json`, `tsconfig.json`, `eslint.config.mjs`, `.prettierignore`, `.vscode/settings.json`, `.github/workflows/check-dist.yml`, `README.md`, `action.yml` (untouched — listed only to be explicit that it is reviewed and left alone).
+**Modified:** `src/main.ts` (shrinks to orchestration), `src/index.ts` (`.js` extension), `__tests__/main.test.ts` (only
+the `run` suite remains, ESM mocking), `package.json`, `tsconfig.json`, `eslint.config.mjs`, `.prettierignore`,
+`.vscode/settings.json`, `.github/workflows/check-dist.yml`, `README.md`, `action.yml` (untouched — listed only to be
+explicit that it is reviewed and left alone).
 
-**Deleted:** `.nvmrc`, `.prettierrc.json`, `.github/linters/`, `.github/workflows/test.yml`, `__tests__/cache-contol.test.ts` (renamed), `__tests__/src/`, `__tests__/src_with_subfolders/` (moved).
+**Deleted:** `.nvmrc`, `.prettierrc.json`, `.github/linters/`, `.github/workflows/test.yml`,
+`__tests__/cache-contol.test.ts` (renamed), `__tests__/src/`, `__tests__/src_with_subfolders/` (moved).
 
 ---
 
 ## Task 1: Characterization snapshot on the current code
 
-The regression net, recorded before anything moves. It spies on `S3Client.prototype.send` rather than on an instance or a module mock — a prototype spy behaves identically under CommonJS and ESM, so this recording mechanism survives Task 4.
+The regression net, recorded before anything moves. It spies on `S3Client.prototype.send` rather than on an instance or
+a module mock — a prototype spy behaves identically under CommonJS and ESM, so this recording mechanism survives Task 4.
 
 **Files:**
 
@@ -386,7 +399,8 @@ Run: `npm test -- __tests__/characterization.test.ts`
 
 Expected: 15 passing tests, and the run writes `__tests__/__snapshots__/characterization.test.ts.snap`.
 
-If any test hangs or attempts a real network call, the `S3Client.prototype.send` spy is not intercepting. In that case the AWS SDK has moved `send` further up the prototype chain — find it with:
+If any test hangs or attempts a real network call, the `S3Client.prototype.send` spy is not intercepting. In that case
+the AWS SDK has moved `send` further up the prototype chain — find it with:
 
 ```bash
 node -e "const {S3Client}=require('@aws-sdk/client-s3'); let p=S3Client.prototype; while(p){ if(Object.getOwnPropertyNames(p).includes('send')) console.log(p.constructor.name); p=Object.getPrototypeOf(p) }"
@@ -400,17 +414,22 @@ Run: `cat __tests__/__snapshots__/characterization.test.ts.snap`
 
 Check by eye, before trusting it as a net:
 
-- the default scenario records three `PutObjectCommand` entries with keys `src/exclude.txt`, `src/exclude.yaml`, `src/func.js`
+- the default scenario records three `PutObjectCommand` entries with keys `src/exclude.txt`, `src/exclude.yaml`,
+  `src/func.js`
 - the `prefix` scenario records the same three keys under `assets/`
 - the `clear` scenario records one `ListObjectsV2Command` and one `DeleteObjectsCommand`
-- the `clear` scenario's ordering assertion (on the raw, unsorted `recorded` array) actually fails if `clearBucket` and `upload` are called in the wrong order — verified by hand, not just read
-- the `cache-control` scenario records `CacheControl: "public, max-age=3600"` on `src/func.js` and `"no-cache"` on the other two
+- the `clear` scenario's ordering assertion (on the raw, unsorted `recorded` array) actually fails if `clearBucket` and
+  `upload` are called in the wrong order — verified by hand, not just read
+- the `cache-control` scenario records `CacheControl: "public, max-age=3600"` on `src/func.js` and `"no-cache"` on the
+  other two
 - the `skip-unchanged` matching scenario records three `HeadObjectCommand` entries and zero `PutObjectCommand` entries
-- the `workload identity` scenario records one `axios.post` entry with `audience: "test-sa-id"` and `subject_token: "github-token"`
+- the `workload identity` scenario records one `axios.post` entry with `audience: "test-sa-id"` and
+  `subject_token: "github-token"`
 - the `no credentials` and `missing required bucket` scenarios record zero calls and one `failed` message each
 - no entry anywhere contains a `Body` that is not a `sha256:` string
 
-If any of these is wrong, the net is recording the wrong thing — fix the test before continuing. A wrong snapshot is worse than no snapshot.
+If any of these is wrong, the net is recording the wrong thing — fix the test before continuing. A wrong snapshot is
+worse than no snapshot.
 
 - [ ] **Step 4: Verify the whole existing suite still passes**
 
@@ -435,7 +454,8 @@ reproduce unchanged after every step of it."
 
 ## Task 2: Move test data to `__fixtures__/workspace/`
 
-Test data is not tests. This move is deliberately its own task: it is the first proof that the Task 1 net actually detects nothing when nothing changed.
+Test data is not tests. This move is deliberately its own task: it is the first proof that the Task 1 net actually
+detects nothing when nothing changed.
 
 **Files:**
 
@@ -493,15 +513,18 @@ to:
 .update(readFileSync(join(process.env.GITHUB_WORKSPACE ?? '', key)))
 ```
 
-Add `import { env } from 'process'` usage is already present in the file as `env`; either `process.env` or the imported `env` is fine — use `env.GITHUB_WORKSPACE ?? ''` to match the file's existing style.
+Add `import { env } from 'process'` usage is already present in the file as `env`; either `process.env` or the imported
+`env` is fine — use `env.GITHUB_WORKSPACE ?? ''` to match the file's existing style.
 
 - [ ] **Step 4: Run the full suite and diff the snapshot**
 
 Run: `npm test && git diff --stat __tests__/__snapshots__/`
 
-Expected: all suites pass, and `git diff` on the snapshot directory prints nothing. The `scrub()` helper is what absorbs the workspace path change in the `fail-on-error` scenario's failure message.
+Expected: all suites pass, and `git diff` on the snapshot directory prints nothing. The `scrub()` helper is what absorbs
+the workspace path change in the `fail-on-error` scenario's failure message.
 
-If the snapshot diffs, do not update it — read the diff. Anything other than a workspace path means the move changed behavior.
+If the snapshot diffs, do not update it — read the diff. Anything other than a workspace path means the move changed
+behavior.
 
 - [ ] **Step 5: Commit**
 
@@ -514,7 +537,8 @@ git commit -m "test: move fixture data to __fixtures__/workspace"
 
 ## Task 3: Split `src/main.ts` into modules (still CommonJS)
 
-The refactor happens before the ESM switch so that only one of the two is ever unverified at a time. Under CommonJS the existing `jest.spyOn(core, ...)` still works, so the test edits in this task are import paths and nothing else.
+The refactor happens before the ESM switch so that only one of the two is ever unverified at a time. Under CommonJS the
+existing `jest.spyOn(core, ...)` still works, so the test edits in this task are import paths and nothing else.
 
 **Files:**
 
@@ -526,11 +550,15 @@ The refactor happens before the ESM switch so that only one of the two is ever u
 
 - Consumes: `run` from `src/main.ts`, unchanged signature.
 - Produces:
-  - `src/auth.ts`: `exchangeToken(token: string, saId: string): Promise<string>`, `resolveTokenService(ycSaJsonCredentials: string, ycIamToken: string, ycSaId: string): Promise<TokenService>`
-  - `src/s3-client.ts`: `createS3Client(tokenService: TokenService): S3Client`
-  - `src/upload.ts`: `upload(s3Client: S3Client, inputs: UploadInputs): Promise<void>`, `runPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void>`, `parseConcurrency(raw: string): number`, `interface UploadInputs`, `DEFAULT_CONCURRENCY = 16`, `MAX_CONCURRENCY = 256`
-  - `src/clear-bucket.ts`: `clearBucket(client: S3Client, bucket: string): Promise<void>`
-  - `src/action-inputs.ts`: `type ActionInputs`, `readInputs(): ActionInputs`
+    - `src/auth.ts`: `exchangeToken(token: string, saId: string): Promise<string>`,
+      `resolveTokenService(ycSaJsonCredentials: string, ycIamToken: string, ycSaId: string): Promise<TokenService>`
+    - `src/s3-client.ts`: `createS3Client(tokenService: TokenService): S3Client`
+    - `src/upload.ts`: `upload(s3Client: S3Client, inputs: UploadInputs): Promise<void>`,
+      `runPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void>`,
+      `parseConcurrency(raw: string): number`, `interface UploadInputs`, `DEFAULT_CONCURRENCY = 16`,
+      `MAX_CONCURRENCY = 256`
+    - `src/clear-bucket.ts`: `clearBucket(client: S3Client, bucket: string): Promise<void>`
+    - `src/action-inputs.ts`: `type ActionInputs`, `readInputs(): ActionInputs`
 
 - [ ] **Step 1: Add `@smithy/types` as a direct dependency**
 
@@ -541,7 +569,8 @@ This lets `FinalizeRequestMiddleware` come from its own package instead of throu
 
 - [ ] **Step 2: Create `src/upload.ts`**
 
-Move `UploadInputs`, `DEFAULT_CONCURRENCY`, `MAX_CONCURRENCY`, `parseConcurrency`, `runPool`, `fileMd5`, `uploadFile`, `upload`, and `parseIgnoreGlobPatterns` out of `main.ts` verbatim:
+Move `UploadInputs`, `DEFAULT_CONCURRENCY`, `MAX_CONCURRENCY`, `parseConcurrency`, `runPool`, `fileMd5`, `uploadFile`,
+`upload`, and `parseIgnoreGlobPatterns` out of `main.ts` verbatim:
 
 ```ts
 import { debug, endGroup, error, info, setFailed, startGroup } from '@actions/core'
@@ -770,7 +799,9 @@ export async function clearBucket(client: S3Client, bucket: string): Promise<voi
 
 - [ ] **Step 4: Create `src/auth.ts`**
 
-The three credential branches and the `TokenService` derivation fold into one function. Two intentional consequences, both recorded in the spec: the unreachable `No IAM token provided` message goes away, and `new IamTokenService(...)` now runs before `readInputs()`. The constructor is pure field assignment, so nothing observable moves.
+The three credential branches and the `TokenService` derivation fold into one function. Two intentional consequences,
+both recorded in the spec: the unreachable `No IAM token provided` message goes away, and `new IamTokenService(...)` now
+runs before `readInputs()`. The constructor is pure field assignment, so nothing observable moves.
 
 ```ts
 import { getIDToken, info } from '@actions/core'
@@ -878,8 +909,8 @@ export function createS3Client(tokenService: TokenService): S3Client {
 ```
 
 If `@smithy/types` does not type-check here, revert this one import to
-`import { type FinalizeRequestMiddleware } from '@aws-sdk/types/dist-types/middleware'`, drop
-the `@smithy/types` dependency added in Step 1, and note the reason in the commit message.
+`import { type FinalizeRequestMiddleware } from '@aws-sdk/types/dist-types/middleware'`, drop the `@smithy/types`
+dependency added in Step 1, and note the reason in the commit message.
 
 - [ ] **Step 6: Create `src/action-inputs.ts`**
 
@@ -1002,8 +1033,9 @@ unchanged: the characterization snapshot reproduces byte-identically."
 
 - Consumes: every export listed in Task 3's Produces block, now under `.js` specifiers (`../src/upload.js`).
 - Produces:
-  - `__fixtures__/core.ts`: named `jest.fn()` exports `debug`, `endGroup`, `error`, `getBooleanInput`, `getIDToken`, `getInput`, `getMultilineInput`, `info`, `setFailed`, `startGroup`
-  - `__fixtures__/axios.ts`: named export `post` plus a `default` export object carrying it
+    - `__fixtures__/core.ts`: named `jest.fn()` exports `debug`, `endGroup`, `error`, `getBooleanInput`, `getIDToken`,
+      `getInput`, `getMultilineInput`, `info`, `setFailed`, `startGroup`
+    - `__fixtures__/axios.ts`: named export `post` plus a `default` export object carrying it
 
 - [ ] **Step 1: Install the ESM harness dependencies**
 
@@ -1013,7 +1045,8 @@ npm install --save-dev ts-jest-resolver @jest/globals
 
 - [ ] **Step 2: Mark the package as ESM**
 
-In `package.json`: add `"type": "module"` next to `"version"`, and delete the entire `"jest"` key (it moves to `jest.config.js` in Step 3). Update the two test scripts:
+In `package.json`: add `"type": "module"` next to `"version"`, and delete the entire `"jest"` key (it moves to
+`jest.config.js` in Step 3). Update the two test scripts:
 
 ```json
 "ci-test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 GITHUB_WORKSPACE=__fixtures__/workspace npx jest",
@@ -1090,17 +1123,20 @@ The `coverageThreshold` key is deliberately absent here; it is added in Task 8 o
 
 - [ ] **Step 5: Add `.js` to every relative import in `src/`**
 
-Only relative specifiers change. Bare specifiers (`@actions/core`, `glob`) and the Yandex SDK deep specifiers (`@yandex-cloud/nodejs-sdk/dist/types`) stay exactly as they are — the SDK's exports map declares `"./dist/*": "./dist/*.js"`, so NodeNext resolves them unchanged.
+Only relative specifiers change. Bare specifiers (`@actions/core`, `glob`) and the Yandex SDK deep specifiers
+(`@yandex-cloud/nodejs-sdk/dist/types`) stay exactly as they are — the SDK's exports map declares
+`"./dist/*": "./dist/*.js"`, so NodeNext resolves them unchanged.
 
-| File | Change |
-| --- | --- |
-| `src/index.ts` | `'./main'` → `'./main.js'` |
-| `src/main.ts` | `'./action-inputs'`, `'./auth'`, `'./clear-bucket'`, `'./s3-client'`, `'./upload'` each gain `.js` |
-| `src/action-inputs.ts` | `'./cache-control'` → `'./cache-control.js'`, `'./upload'` → `'./upload.js'` |
-| `src/auth.ts` | `'./service-account-json'` → `'./service-account-json.js'` |
-| `src/upload.ts` | `'./cache-control'` → `'./cache-control.js'` |
+| File                   | Change                                                                                             |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| `src/index.ts`         | `'./main'` → `'./main.js'`                                                                         |
+| `src/main.ts`          | `'./action-inputs'`, `'./auth'`, `'./clear-bucket'`, `'./s3-client'`, `'./upload'` each gain `.js` |
+| `src/action-inputs.ts` | `'./cache-control'` → `'./cache-control.js'`, `'./upload'` → `'./upload.js'`                       |
+| `src/auth.ts`          | `'./service-account-json'` → `'./service-account-json.js'`                                         |
+| `src/upload.ts`        | `'./cache-control'` → `'./cache-control.js'`                                                       |
 
-`src/cache-control.ts`, `src/clear-bucket.ts`, `src/s3-client.ts`, and `src/service-account-json.ts` have no relative imports.
+`src/cache-control.ts`, `src/clear-bucket.ts`, `src/s3-client.ts`, and `src/service-account-json.ts` have no relative
+imports.
 
 - [ ] **Step 6: Verify the source compiles before touching tests**
 
@@ -1128,7 +1164,8 @@ export const startGroup = jest.fn<typeof core.startGroup>()
 
 - [ ] **Step 8: Create `__fixtures__/axios.ts`**
 
-`src/auth.ts` does `import axios from 'axios'` and calls `axios.post(...)`, so the double needs a default export carrying `post`.
+`src/auth.ts` does `import axios from 'axios'` and calls `axios.post(...)`, so the double needs a default export
+carrying `post`.
 
 ```ts
 import { jest } from '@jest/globals'
@@ -1166,19 +1203,22 @@ jest.unstable_mockModule('axios', () => axios)
 const { run } = await import('../src/main.js')
 ```
 
-Then, inside `beforeEach`, the `jest.spyOn(core, ...)` lines become direct references to the
-fixture mocks — the fixture functions *are* the mocks:
+Then, inside `beforeEach`, the `jest.spyOn(core, ...)` lines become direct references to the fixture mocks — the fixture
+functions _are_ the mocks:
 
 ```ts
-        getInputMock = core.getInput
-        getMultilineInputMock = core.getMultilineInput
-        getBooleanInputMock = core.getBooleanInput
-        getIDTokenMock = core.getIDToken
-        setFailedMock = core.setFailed
-        axiosPostMock = axios.post
+getInputMock = core.getInput
+getMultilineInputMock = core.getMultilineInput
+getBooleanInputMock = core.getBooleanInput
+getIDTokenMock = core.getIDToken
+setFailedMock = core.setFailed
+axiosPostMock = axios.post
 ```
 
-Delete the five `jest.spyOn(core, 'info' | 'debug' | 'error' | 'startGroup' | 'endGroup').mockImplementation()` lines — the fixtures are already no-op mocks. Change the declared types of those six `let` bindings from `jest.SpyInstance` to `jest.Mock`, or simply drop the separate declarations and use `core.getInput` etc. inline. Keep `afterEach(() => { jest.restoreAllMocks() })` for the `S3Client.prototype.send` spy, which stays a real `jest.spyOn`.
+Delete the five `jest.spyOn(core, 'info' | 'debug' | 'error' | 'startGroup' | 'endGroup').mockImplementation()` lines —
+the fixtures are already no-op mocks. Change the declared types of those six `let` bindings from `jest.SpyInstance` to
+`jest.Mock`, or simply drop the separate declarations and use `core.getInput` etc. inline. Keep
+`afterEach(() => { jest.restoreAllMocks() })` for the `S3Client.prototype.send` spy, which stays a real `jest.spyOn`.
 
 - [ ] **Step 10: Split `__tests__/main.test.ts` into three files**
 
@@ -1207,17 +1247,16 @@ const { parseConcurrency, runPool, upload } = await import('../src/upload.js')
 type UploadInputs = import('../src/upload.js').UploadInputs
 ```
 
-Everything else in those three describe blocks is copied verbatim, with two mechanical
-substitutions:
+Everything else in those three describe blocks is copied verbatim, with two mechanical substitutions:
 
-- `jest.spyOn(core, 'setFailed').mockImplementation()` becomes `core.setFailed`, and the
-  matching `setFailedMock.mockRestore()` lines are deleted (`clearMocks: true` handles it)
-- `join('__tests__', key)` becomes `join(env.GITHUB_WORKSPACE ?? '', key)` (already done in
-  Task 2 — carry it across unchanged)
+- `jest.spyOn(core, 'setFailed').mockImplementation()` becomes `core.setFailed`, and the matching
+  `setFailedMock.mockRestore()` lines are deleted (`clearMocks: true` handles it)
+- `join('__tests__', key)` becomes `join(env.GITHUB_WORKSPACE ?? '', key)` (already done in Task 2 — carry it across
+  unchanged)
 
 `__tests__/clear-bucket.test.ts` takes the three `clearBucket` tests (`it should clear bucket`,
-`it should clear bucket with a lot objects`, and the two empty/undefined-contents tests
-currently sitting inside the `run` describe block):
+`it should clear bucket with a lot objects`, and the two empty/undefined-contents tests currently sitting inside the
+`run` describe block):
 
 ```ts
 import { jest } from '@jest/globals'
@@ -1244,8 +1283,8 @@ const { run } = await import('../src/main.js')
 ```
 
 with `jest.spyOn(core, 'getInput')` and friends replaced by the fixture mocks, and
-`jest.spyOn(require('axios'), 'post')` replaced by `axios.post`. The assertions themselves —
-which `setFailed` message, which `axios.post` payload — do not change.
+`jest.spyOn(require('axios'), 'post')` replaced by `axios.post`. The assertions themselves — which `setFailed` message,
+which `axios.post` payload — do not change.
 
 - [ ] **Step 11: Rename the cache-control test**
 
@@ -1263,12 +1302,10 @@ Expected: all five suites pass and the snapshot diff is empty.
 
 Two failure modes to expect here, both with known fixes:
 
-- `unstable_mockModule` matches the *exact* specifier string the module under test imports. If a
-  `core` mock does not take effect, check that the source imports `'@actions/core'` and not a
-  subpath.
-- `jest.fn()` doubles from `__fixtures__` are shared across a test file. `clearMocks: true`
-  resets them between tests, so any implementation must be set in `beforeEach` or in the test
-  itself, never in `beforeAll`.
+- `unstable_mockModule` matches the _exact_ specifier string the module under test imports. If a `core` mock does not
+  take effect, check that the source imports `'@actions/core'` and not a subpath.
+- `jest.fn()` doubles from `__fixtures__` are shared across a test file. `clearMocks: true` resets them between tests,
+  so any implementation must be set in `beforeEach` or in the test itself, never in `beforeAll`.
 
 - [ ] **Step 13: Commit**
 
@@ -1370,16 +1407,15 @@ In `package.json`:
 
 Run: `npm run package`
 
-Expected: `dist/index.js` and `dist/index.js.map` only. No `proto/`, `xds/`,
-`protoc-gen-validate/`, `licenses.txt`, or `sourcemap-register.js`.
+Expected: `dist/index.js` and `dist/index.js.map` only. No `proto/`, `xds/`, `protoc-gen-validate/`, `licenses.txt`, or
+`sourcemap-register.js`.
 
-Rollup will emit circular-dependency and `this`-rewrite warnings from the CommonJS graph. Those
-are expected. What is not acceptable is an *error*, or an unresolved import.
+Rollup will emit circular-dependency and `this`-rewrite warnings from the CommonJS graph. Those are expected. What is
+not acceptable is an _error_, or an unresolved import.
 
-If `banner` collides with a bundled declaration (Rollup errors on a duplicate `require`,
-`__filename`, or `__dirname` binding), rename the bundle's version rather than dropping the
-shim — the shim is what turns a `ReferenceError` into a clear `ENOENT` if grpc-js ever reaches
-its proto loader.
+If `banner` collides with a bundled declaration (Rollup errors on a duplicate `require`, `__filename`, or `__dirname`
+binding), rename the bundle's version rather than dropping the shim — the shim is what turns a `ReferenceError` into a
+clear `ENOENT` if grpc-js ever reaches its proto loader.
 
 - [ ] **Step 5: Smoke-test the bundle by hand**
 
@@ -1389,8 +1425,8 @@ env -u INPUT_YC-SA-JSON-CREDENTIALS node dist/index.js; echo "exit=$?"
 
 Expected: prints `::error::No credentials` and `exit=1`.
 
-This is the gate on the whole Rollup decision. If the bundle throws `ERR_REQUIRE_ESM`, a
-`ReferenceError`, or a missing-module error instead, take the documented fallback:
+This is the gate on the whole Rollup decision. If the bundle throws `ERR_REQUIRE_ESM`, a `ReferenceError`, or a
+missing-module error instead, take the documented fallback:
 
 - revert `package` to `"ncc build src/index.ts --license licenses.txt"`
 - add `dist/package.json` containing `{"type":"commonjs"}`
@@ -1403,8 +1439,7 @@ The ESM source layout and the test harness stand either way; only this script ch
 
 Run: `npm test`
 
-Expected: all suites pass (tests run against `src/`, not `dist/`, but this catches an
-accidental source edit).
+Expected: all suites pass (tests run against `src/`, not `dist/`, but this catches an accidental source edit).
 
 If Step 5 succeeded, remove ncc:
 
@@ -1434,7 +1469,8 @@ unreachable for a client-only action."
 
 **Files:**
 
-- Create: `.node-version`, `.prettierrc.yml`, `.env.example`, `.markdown-lint.yml`, `.yaml-lint.yml`, `actionlint.yml`, `.vscode/extensions.json`, `.vscode/launch.json`
+- Create: `.node-version`, `.prettierrc.yml`, `.env.example`, `.markdown-lint.yml`, `.yaml-lint.yml`, `actionlint.yml`,
+  `.vscode/extensions.json`, `.vscode/launch.json`
 - Modify: `eslint.config.mjs`, `.prettierignore`, `.vscode/settings.json`, `package.json` (scripts, ESLint deps)
 - Delete: `.nvmrc`, `.prettierrc.json`, `.github/linters/`
 
@@ -1488,8 +1524,7 @@ coverage/
 
 - [ ] **Step 3: Replace `eslint.config.mjs` with the template's**
 
-The current config pulls in `eslint-plugin-github`'s React rules, which are meaningless for a
-Node action.
+The current config pulls in `eslint-plugin-github`'s React rules, which are meaningless for a Node action.
 
 ```js
 // See: https://eslint.org/docs/latest/use/configure/configuration-files
@@ -1579,26 +1614,26 @@ npm install --save-dev eslint-config-prettier
 
 # Unordered list style
 MD004:
-  style: dash
+    style: dash
 
 # Disable line length for tables
 MD013:
-  tables: false
+    tables: false
 
 # Ordered list item prefix
 MD029:
-  style: one
+    style: one
 
 # Spaces after list markers
 MD030:
-  ul_single: 1
-  ol_single: 1
-  ul_multi: 1
-  ol_multi: 1
+    ul_single: 1
+    ol_single: 1
+    ul_multi: 1
+    ol_multi: 1
 
 # Code block style
 MD046:
-  style: fenced
+    style: fenced
 ```
 
 `.yaml-lint.yml`:
@@ -1607,15 +1642,15 @@ MD046:
 # See: https://yamllint.readthedocs.io/en/stable/
 
 rules:
-  document-end: disable
-  document-start:
-    level: warning
-    present: false
-  line-length:
-    level: warning
-    max: 80
-    allow-non-breakable-words: true
-    allow-non-breakable-inline-mappings: true
+    document-end: disable
+    document-start:
+        level: warning
+        present: false
+    line-length:
+        level: warning
+        max: 80
+        allow-non-breakable-words: true
+        allow-non-breakable-inline-mappings: true
 ```
 
 `actionlint.yml`:
@@ -1624,9 +1659,9 @@ rules:
 # See: https://github.com/rhysd/actionlint/blob/v1.7.7/docs/config.md
 
 paths:
-  .github/workflows/**/*.{yml,yaml}:
-    ignore:
-      - invalid runner name "node24"
+    .github/workflows/**/*.{yml,yaml}:
+        ignore:
+            - invalid runner name "node24"
 ```
 
 Then delete the stale copies:
@@ -1662,8 +1697,8 @@ INPUT_FAIL-ON-ERROR=false
 GITHUB_WORKSPACE=.
 ```
 
-Confirm `.gitignore` already ignores `.env` (it does — the repo's `.gitignore` is the standard
-Node template). `.env.example` itself is committed.
+Confirm `.gitignore` already ignores `.env` (it does — the repo's `.gitignore` is the standard Node template).
+`.env.example` itself is committed.
 
 - [ ] **Step 6: Add the VS Code config**
 
@@ -1671,19 +1706,19 @@ Node template). `.env.example` itself is committed.
 
 ```json
 {
-  "recommendations": [
-    "bierner.markdown-preview-github-styles",
-    "davidanson.vscode-markdownlint",
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode",
-    "github.copilot",
-    "github.copilot-chat",
-    "github.vscode-github-actions",
-    "github.vscode-pull-request-github",
-    "redhat.vscode-yaml",
-    "rvest.vs-code-prettier-eslint",
-    "yzhang.markdown-all-in-one"
-  ]
+    "recommendations": [
+        "bierner.markdown-preview-github-styles",
+        "davidanson.vscode-markdownlint",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "github.copilot",
+        "github.copilot-chat",
+        "github.vscode-github-actions",
+        "github.vscode-pull-request-github",
+        "redhat.vscode-yaml",
+        "rvest.vs-code-prettier-eslint",
+        "yzhang.markdown-all-in-one"
+    ]
 }
 ```
 
@@ -1691,23 +1726,23 @@ Node template). `.env.example` itself is committed.
 
 ```json
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Action",
-      "type": "node",
-      "request": "launch",
-      "runtimeExecutable": "npx",
-      "cwd": "${workspaceRoot}",
-      "args": ["@github/local-action", ".", "src/main.ts", ".env"],
-      "console": "integratedTerminal",
-      "skipFiles": ["<node_internals>/**", "node_modules/**"]
-    }
-  ]
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Action",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npx",
+            "cwd": "${workspaceRoot}",
+            "args": ["@github/local-action", ".", "src/main.ts", ".env"],
+            "console": "integratedTerminal",
+            "skipFiles": ["<node_internals>/**", "node_modules/**"]
+        }
+    ]
 }
 ```
 
-`.vscode/settings.json` is *merged*, not replaced — the existing colour block stays:
+`.vscode/settings.json` is _merged_, not replaced — the existing colour block stays:
 
 ```json
 {
@@ -1727,9 +1762,7 @@ Node template). `.env.example` itself is committed.
     "github.copilot.chat.reviewSelection.instructions": [
         { "text": "Review the code changes carefully before accepting them." }
     ],
-    "github.copilot.chat.commitMessageGeneration.instructions": [
-        { "text": "Use conventional commit message format." }
-    ],
+    "github.copilot.chat.commitMessageGeneration.instructions": [{ "text": "Use conventional commit message format." }],
     "github.copilot.chat.pullRequestDescriptionGeneration.instructions": [
         { "text": "Always include a list of key changes." }
     ]
@@ -1742,8 +1775,8 @@ Node template). `.env.example` itself is committed.
 npm install --save-dev @github/local-action
 ```
 
-In `package.json`, the `scripts` block becomes (note `git-tag` and `prepare` are kept —
-`git-tag` is this repo's release convention and the template's `script/release` is not adopted):
+In `package.json`, the `scripts` block becomes (note `git-tag` and `prepare` are kept — `git-tag` is this repo's release
+convention and the template's `script/release` is not adopted):
 
 ```json
 "scripts": {
@@ -1763,8 +1796,8 @@ In `package.json`, the `scripts` block becomes (note `git-tag` and `prepare` are
 }
 ```
 
-`format:write` now formats the whole repo rather than `**/*.ts`, so this step produces a large
-reformatting diff across YAML and Markdown. That is expected and happens exactly once.
+`format:write` now formats the whole repo rather than `**/*.ts`, so this step produces a large reformatting diff across
+YAML and Markdown. That is expected and happens exactly once.
 
 - [ ] **Step 8: Run the full gate and diff the snapshot**
 
@@ -1772,10 +1805,9 @@ Run: `npm run format:write && npm run lint && npm test && git diff --stat __test
 
 Expected: Prettier rewrites files, ESLint is clean, all suites pass, snapshot diff empty.
 
-If ESLint reports `parserOptions.projectService` errors for files under `__fixtures__/` or
-`__tests__/`, add the offending path to `allowDefaultProject`. The list above covers one
-directory level only, which is all this repo needs — `__fixtures__/workspace/` holds `.js` data
-files, not `.ts`.
+If ESLint reports `parserOptions.projectService` errors for files under `__fixtures__/` or `__tests__/`, add the
+offending path to `allowDefaultProject`. The list above covers one directory level only, which is all this repo needs —
+`__fixtures__/workspace/` holds `.js` data files, not `.ts`.
 
 - [ ] **Step 9: Commit**
 
@@ -1802,88 +1834,89 @@ existing .vscode/settings.json colour block is merged, not replaced."
 
 **Interfaces:**
 
-- Consumes: `.node-version` from Task 6, `dist/index.js` from Task 5, the `format:check` / `lint` / `ci-test` / `coverage` scripts from Task 6.
+- Consumes: `.node-version` from Task 6, `dist/index.js` from Task 5, the `format:check` / `lint` / `ci-test` /
+  `coverage` scripts from Task 6.
 - Produces: nothing consumed by later tasks.
 
 - [ ] **Step 1: Create `.github/workflows/ci.yml`**
 
-The template's `test-action` job runs the action against itself, which for this action needs
-Yandex Cloud credentials and a real bucket. It is replaced by a bundle smoke test that proves
-the ESM bundle loads and both the grpc-js and AWS SDK module graphs initialize.
+The template's `test-action` job runs the action against itself, which for this action needs Yandex Cloud credentials
+and a real bucket. It is replaced by a bundle smoke test that proves the ESM bundle loads and both the grpc-js and AWS
+SDK module graphs initialize.
 
 ```yaml
 name: Continuous Integration
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+    pull_request:
+    push:
+        branches:
+            - main
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  test-typescript:
-    name: TypeScript Tests
-    runs-on: ubuntu-latest
+    test-typescript:
+        name: TypeScript Tests
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v7
+        steps:
+            - name: Checkout
+              id: checkout
+              uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        id: setup-node
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: npm
+            - name: Setup Node.js
+              id: setup-node
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: .node-version
+                  cache: npm
 
-      - name: Install Dependencies
-        id: npm-ci
-        run: npm ci
+            - name: Install Dependencies
+              id: npm-ci
+              run: npm ci
 
-      - name: Check Format
-        id: npm-format-check
-        run: npm run format:check
+            - name: Check Format
+              id: npm-format-check
+              run: npm run format:check
 
-      - name: Lint
-        id: npm-lint
-        run: npm run lint
+            - name: Lint
+              id: npm-lint
+              run: npm run lint
 
-      - name: Test
-        id: npm-ci-test
-        run: npm run ci-test
+            - name: Test
+              id: npm-ci-test
+              run: npm run ci-test
 
-  smoke-test:
-    name: Bundle Smoke Test
-    runs-on: ubuntu-latest
+    smoke-test:
+        name: Bundle Smoke Test
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v7
+        steps:
+            - name: Checkout
+              id: checkout
+              uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        id: setup-node
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
+            - name: Setup Node.js
+              id: setup-node
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: .node-version
 
-      - name: Run the bundle without credentials
-        id: smoke
-        run: |
-          set +e
-          output=$(node dist/index.js 2>&1)
-          status=$?
-          set -e
-          echo "$output"
-          if [ "$status" -eq 0 ]; then
-            echo "Expected a non-zero exit status, got 0"
-            exit 1
-          fi
-          echo "$output" | grep -q "No credentials"
+            - name: Run the bundle without credentials
+              id: smoke
+              run: |
+                  set +e
+                  output=$(node dist/index.js 2>&1)
+                  status=$?
+                  set -e
+                  echo "$output"
+                  if [ "$status" -eq 0 ]; then
+                    echo "Expected a non-zero exit status, got 0"
+                    exit 1
+                  fi
+                  echo "$output" | grep -q "No credentials"
 ```
 
 - [ ] **Step 2: Create `.github/workflows/linter.yml`**
@@ -1899,55 +1932,55 @@ The template's, minus `CHECKOV_FILE_NAME` (no `.checkov.yml`, out of scope per t
 name: Lint Codebase
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+    pull_request:
+    push:
+        branches:
+            - main
 
 permissions:
-  contents: read
-  packages: read
-  statuses: write
+    contents: read
+    packages: read
+    statuses: write
 
 jobs:
-  lint:
-    name: Lint Codebase
-    runs-on: ubuntu-latest
+    lint:
+        name: Lint Codebase
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
+        steps:
+            - name: Checkout
+              id: checkout
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
 
-      - name: Setup Node.js
-        id: setup-node
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: npm
+            - name: Setup Node.js
+              id: setup-node
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: .node-version
+                  cache: npm
 
-      - name: Install Dependencies
-        id: install
-        run: npm ci
+            - name: Install Dependencies
+              id: install
+              run: npm ci
 
-      - name: Lint Codebase
-        id: super-linter
-        uses: super-linter/super-linter/slim@v8
-        env:
-          DEFAULT_BRANCH: main
-          FILTER_REGEX_EXCLUDE: dist/**/*
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LINTER_RULES_PATH: .
-          VALIDATE_ALL_CODEBASE: true
-          VALIDATE_BIOME_FORMAT: false
-          VALIDATE_BIOME_LINT: false
-          VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
-          VALIDATE_JAVASCRIPT_ES: false
-          VALIDATE_JSCPD: false
-          VALIDATE_JSON: false
-          VALIDATE_TYPESCRIPT_ES: false
+            - name: Lint Codebase
+              id: super-linter
+              uses: super-linter/super-linter/slim@v8
+              env:
+                  DEFAULT_BRANCH: main
+                  FILTER_REGEX_EXCLUDE: dist/**/*
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  LINTER_RULES_PATH: .
+                  VALIDATE_ALL_CODEBASE: true
+                  VALIDATE_BIOME_FORMAT: false
+                  VALIDATE_BIOME_LINT: false
+                  VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
+                  VALIDATE_JAVASCRIPT_ES: false
+                  VALIDATE_JSCPD: false
+                  VALIDATE_JSON: false
+                  VALIDATE_TYPESCRIPT_ES: false
 ```
 
 - [ ] **Step 3: Point `check-dist.yml` at the new Node version file**
@@ -1955,13 +1988,13 @@ jobs:
 In `.github/workflows/check-dist.yml`, change both occurrences of:
 
 ```yaml
-          node-version-file: .nvmrc
+node-version-file: .nvmrc
 ```
 
 to:
 
 ```yaml
-          node-version-file: .node-version
+node-version-file: .node-version
 ```
 
 Everything else in that workflow stays — it already runs `npm run bundle` and diffs `dist/`.
@@ -1984,8 +2017,8 @@ Expected: `exit=1` and `No credentials` in the output — the same assertion the
 
 - [ ] **Step 6: Lint the workflows**
 
-Run: `npx actionlint` (or skip if `actionlint` is not installed locally — `linter.yml` covers it
-in CI, and `actionlint.yml` already silences the `node24` false positive).
+Run: `npx actionlint` (or skip if `actionlint` is not installed locally — `linter.yml` covers it in CI, and
+`actionlint.yml` already silences the `node24` false positive).
 
 - [ ] **Step 7: Commit**
 
@@ -2007,7 +2040,8 @@ Committed last so the coverage floors are validated against the finished tree.
 
 **Files:**
 
-- Modify: `package.json` (version, dependency cleanup, `overrides`), `jest.config.js` (threshold), `README.md` (five `@v4` references), `badges/coverage.svg` (regenerated)
+- Modify: `package.json` (version, dependency cleanup, `overrides`), `jest.config.js` (threshold), `README.md` (five
+  `@v4` references), `badges/coverage.svg` (regenerated)
 
 **Interfaces:**
 
@@ -2030,8 +2064,8 @@ npm uninstall @actions/github @types/mustache @swc/cli @swc/core @swc/jest js-ya
 
 - [ ] **Step 2: Move the version-floating entries from `dependencies` to `overrides`**
 
-`minimist` and `path-scurry` are not imported by `src/`; they sit in `dependencies` only to
-float transitive versions, which is what `overrides` is for.
+`minimist` and `path-scurry` are not imported by `src/`; they sit in `dependencies` only to float transitive versions,
+which is what `overrides` is for.
 
 ```bash
 npm uninstall minimist path-scurry
@@ -2053,9 +2087,9 @@ Then in `package.json`, extend the existing `overrides` block:
 }
 ```
 
-Run `npm install` and confirm `npm ls minimist path-scurry` still resolves to the intended
-versions. `@grpc/grpc-js` stays in `dependencies` — `src/` never imports it, but it is the one
-transitive package the bundle is sensitive to, and a direct entry keeps Dependabot pointed at it.
+Run `npm install` and confirm `npm ls minimist path-scurry` still resolves to the intended versions. `@grpc/grpc-js`
+stays in `dependencies` — `src/` never imports it, but it is the one transitive package the bundle is sensitive to, and
+a direct entry keeps Dependabot pointed at it.
 
 - [ ] **Step 3: Measure coverage on the finished tree**
 
@@ -2078,9 +2112,9 @@ In `jest.config.js`, add after `coverageReporters`:
     },
 ```
 
-These floors sit just below the pre-rewrite measurement (lines 96.27, statements 96.39,
-functions 96.15, branches 86.76). If Step 3 shows a metric below its floor, **add the missing
-test** — do not lower the floor. The pre-rewrite numbers are the contract.
+These floors sit just below the pre-rewrite measurement (lines 96.27, statements 96.39, functions 96.15, branches
+86.76). If Step 3 shows a metric below its floor, **add the missing test** — do not lower the floor. The pre-rewrite
+numbers are the contract.
 
 - [ ] **Step 5: Regenerate the coverage badge**
 
@@ -2092,16 +2126,15 @@ Expected: `badges/coverage.svg` updates to the new percentage.
 
 In `package.json`, set `"version": "5.0.0"`.
 
-In `README.md`, change all five occurrences of
-`uses: yc-actions/yc-obj-storage-upload@v4` to `@v5` (lines 30, 78, 93, 115, 152 at the time of
-writing — verify with `grep -n "@v4" README.md`).
+In `README.md`, change all five occurrences of `uses: yc-actions/yc-obj-storage-upload@v4` to `@v5` (lines 30, 78, 93,
+115, 152 at the time of writing — verify with `grep -n "@v4" README.md`).
 
 - [ ] **Step 7: Run the full gate one last time**
 
 Run: `npm run all && git diff --stat __tests__/__snapshots__/`
 
-Expected: format, lint, test, coverage and package all pass; the snapshot diff is empty; `dist/`
-is regenerated and matches what `check-dist.yml` will produce.
+Expected: format, lint, test, coverage and package all pass; the snapshot diff is empty; `dist/` is regenerated and
+matches what `check-dist.yml` will produce.
 
 - [ ] **Step 8: Commit**
 
@@ -2131,9 +2164,8 @@ The last gate before merge. Not automatable in CI — it needs a bucket and cred
 
 - [ ] **Step 1: Ask for a scratch bucket and credentials**
 
-Ask the human partner for a bucket name and one of: a service-account JSON, an IAM token, or a
-service-account ID with workload identity configured. Do not proceed without them, and do not
-substitute a production bucket.
+Ask the human partner for a bucket name and one of: a service-account JSON, an IAM token, or a service-account ID with
+workload identity configured. Do not proceed without them, and do not substitute a production bucket.
 
 - [ ] **Step 2: Upload from `main` into a baseline prefix**
 
@@ -2143,8 +2175,8 @@ git checkout main
 npm ci && npm run package
 ```
 
-Then run the bundle against the fixture tree, with the credentials supplied in Step 1 exported
-as `INPUT_*` variables and `INPUT_PREFIX=verify-main/`:
+Then run the bundle against the fixture tree, with the credentials supplied in Step 1 exported as `INPUT_*` variables
+and `INPUT_PREFIX=verify-main/`:
 
 ```bash
 env GITHUB_WORKSPACE=__fixtures__/workspace \
@@ -2157,8 +2189,7 @@ env GITHUB_WORKSPACE=__fixtures__/workspace \
     node dist/index.js
 ```
 
-Note: on `main` the fixture tree is still at `__tests__/`, so use
-`GITHUB_WORKSPACE=__tests__` for this run.
+Note: on `main` the fixture tree is still at `__tests__/`, so use `GITHUB_WORKSPACE=__tests__` for this run.
 
 - [ ] **Step 3: Upload from the branch into a second prefix**
 
@@ -2167,29 +2198,25 @@ git checkout feat/typescript-action-template
 npm ci && npm run package
 ```
 
-Same command, with `GITHUB_WORKSPACE=__fixtures__/workspace` and
-`INPUT_PREFIX=verify-branch/`.
+Same command, with `GITHUB_WORKSPACE=__fixtures__/workspace` and `INPUT_PREFIX=verify-branch/`.
 
 - [ ] **Step 4: Compare the two prefixes**
 
-List both prefixes and compare key names (minus the prefix), `Content-Type`, `Cache-Control`,
-and `ETag`:
+List both prefixes and compare key names (minus the prefix), `Content-Type`, `Cache-Control`, and `ETag`:
 
 ```bash
 yc storage s3api list-objects --bucket "$BUCKET" --prefix verify-main/
 yc storage s3api list-objects --bucket "$BUCKET" --prefix verify-branch/
 ```
 
-Expected: identical relative keys, identical ETags, identical `Content-Type` and
-`Cache-Control` on each corresponding object.
+Expected: identical relative keys, identical ETags, identical `Content-Type` and `Cache-Control` on each corresponding
+object.
 
-Any difference is a behavior change the snapshot did not catch. Report it rather than
-explaining it away.
+Any difference is a behavior change the snapshot did not catch. Report it rather than explaining it away.
 
 - [ ] **Step 5: Clean up and report**
 
-Delete both verification prefixes from the bucket. Report the comparison result to the human
-partner, then open the PR.
+Delete both verification prefixes from the bucket. Report the comparison result to the human partner, then open the PR.
 
 ---
 
@@ -2197,30 +2224,30 @@ partner, then open the PR.
 
 **Spec coverage:**
 
-| Spec section | Task |
-| --- | --- |
-| Target layout — new files | Tasks 3, 4, 5, 6, 7 |
-| Target layout — deletions | Task 6 (`.nvmrc`, `.prettierrc.json`, `.github/linters/`), Task 7 (`test.yml`), Task 5 (ncc `dist/` artifacts) |
-| Module split table | Task 3, Steps 2–7 |
-| `resolveTokenService` fold, unreachable branch, constructor ordering | Task 3, Step 4 |
-| ESM migration (`type: module`, tsconfig, `.js` specifiers) | Task 4, Steps 2, 4, 5 |
-| `@smithy/types` rewrite of the deep import | Task 3, Steps 1 and 5 |
-| Bundling, banner, `exportConditions`, plugin set | Task 5, Step 2 |
-| Test harness, `unstable_mockModule`, fixtures | Task 4, Steps 7–11 |
-| Fixture data move | Task 2 |
-| Coverage ratchet, committed last | Task 8, Steps 3–4 |
-| Stage 0 characterization snapshot | Task 1 |
-| Bundle smoke test | Task 5 Step 5 (local), Task 7 Step 1 (CI) |
-| Real upload | Task 9 |
-| CI: `ci.yml`, `check-dist.yml`, `linter.yml`, `test.yml` deletion | Task 7 |
-| npm scripts, `git-tag` kept | Task 6, Step 7 |
-| Dependency removals and additions | Task 3 Step 1, Task 4 Step 1, Task 5 Steps 1 and 6, Task 6 Steps 3 and 7, Task 8 Steps 1–2 |
-| Version 5.0.0 and README `@v5` | Task 8, Step 6 |
-| Rollup fallback to ncc | Task 5, Step 5 |
+| Spec section                                                         | Task                                                                                                           |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Target layout — new files                                            | Tasks 3, 4, 5, 6, 7                                                                                            |
+| Target layout — deletions                                            | Task 6 (`.nvmrc`, `.prettierrc.json`, `.github/linters/`), Task 7 (`test.yml`), Task 5 (ncc `dist/` artifacts) |
+| Module split table                                                   | Task 3, Steps 2–7                                                                                              |
+| `resolveTokenService` fold, unreachable branch, constructor ordering | Task 3, Step 4                                                                                                 |
+| ESM migration (`type: module`, tsconfig, `.js` specifiers)           | Task 4, Steps 2, 4, 5                                                                                          |
+| `@smithy/types` rewrite of the deep import                           | Task 3, Steps 1 and 5                                                                                          |
+| Bundling, banner, `exportConditions`, plugin set                     | Task 5, Step 2                                                                                                 |
+| Test harness, `unstable_mockModule`, fixtures                        | Task 4, Steps 7–11                                                                                             |
+| Fixture data move                                                    | Task 2                                                                                                         |
+| Coverage ratchet, committed last                                     | Task 8, Steps 3–4                                                                                              |
+| Stage 0 characterization snapshot                                    | Task 1                                                                                                         |
+| Bundle smoke test                                                    | Task 5 Step 5 (local), Task 7 Step 1 (CI)                                                                      |
+| Real upload                                                          | Task 9                                                                                                         |
+| CI: `ci.yml`, `check-dist.yml`, `linter.yml`, `test.yml` deletion    | Task 7                                                                                                         |
+| npm scripts, `git-tag` kept                                          | Task 6, Step 7                                                                                                 |
+| Dependency removals and additions                                    | Task 3 Step 1, Task 4 Step 1, Task 5 Steps 1 and 6, Task 6 Steps 3 and 7, Task 8 Steps 1–2                     |
+| Version 5.0.0 and README `@v5`                                       | Task 8, Step 6                                                                                                 |
+| Rollup fallback to ncc                                               | Task 5, Step 5                                                                                                 |
 
 No spec requirement is unassigned.
 
-**Type consistency:** `UploadInputs`, `ActionInputs`, `TokenService`, `createS3Client`,
-`resolveTokenService`, `readInputs`, `clearBucket`, `upload`, `runPool`, and `parseConcurrency`
-are named identically in Task 3's Interfaces block, Task 3's code, and Task 4's import
-rewrites. `DEFAULT_CONCURRENCY` and `MAX_CONCURRENCY` keep their current names and values.
+**Type consistency:** `UploadInputs`, `ActionInputs`, `TokenService`, `createS3Client`, `resolveTokenService`,
+`readInputs`, `clearBucket`, `upload`, `runPool`, and `parseConcurrency` are named identically in Task 3's Interfaces
+block, Task 3's code, and Task 4's import rewrites. `DEFAULT_CONCURRENCY` and `MAX_CONCURRENCY` keep their current names
+and values.

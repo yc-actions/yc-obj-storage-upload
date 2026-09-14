@@ -301,7 +301,6 @@ describe('upload', () => {
             mkdirSync(join(cwd, './bigfile'))
         } catch (e: unknown) {
             if (e instanceof Error && 'code' in e && e.code !== 'EEXIST') {
-                // eslint-disable-next-line no-console
                 console.log(e)
                 throw e
             }
