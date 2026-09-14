@@ -68,9 +68,11 @@ you want to use. The action will use the first one it finds.
 The `root` input sets the folder whose contents are uploaded; keys in the bucket are relative to it. Use `include` and
 `exclude` to filter files with glob patterns (one pattern per line).
 
-> [!IMPORTANT] Glob patterns in `include` are **not recursive by default**. The default value `*` matches only files
-> located directly in `root`; files in nested directories are not uploaded. To upload a folder with all of its
-> subdirectories, use the `**/*` pattern:
+<!-- prettier-ignore -->
+> [!IMPORTANT]
+> Glob patterns in `include` are **not recursive by default**. The default value `*` matches only files located
+> directly in `root`; files in nested directories are not uploaded. To upload a folder with all of its subdirectories,
+> use the `**/*` pattern:
 
 ```yaml
 - name: Upload files to Object Storage

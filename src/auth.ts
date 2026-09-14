@@ -18,7 +18,11 @@ export async function exchangeToken(token: string, saId: string): Promise<string
         {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
-            }
+            },
+            // Without this, axios rejects on 4xx/5xx before the status check below runs, and the
+            // caller sees axios's generic "Request failed with status code 400" instead of the
+            // intended message.
+            validateStatus: () => true
         }
     )
     if (res.status !== 200) {

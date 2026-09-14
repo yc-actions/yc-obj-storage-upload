@@ -56,10 +56,11 @@ export default [
                         'rollup.config.ts'
                     ],
                     // tsconfig.json's `exclude` keeps __fixtures__ and __tests__ out of the real
-                    // project, so __fixtures__/*.ts (2), __tests__/*.ts (5), and the three root
-                    // config files above (3) all fall back to the default project at once (10
-                    // files), past typescript-eslint's default cap of 8.
-                    maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 10
+                    // project, so __fixtures__/*.ts, __tests__/*.ts, and the three root config
+                    // files above all fall back to the default project at once, past
+                    // typescript-eslint's default cap of 8. The current match count is 10; this is
+                    // set to 20 to leave headroom for new test/fixture files without failing lint.
+                    maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 20
                 },
                 tsconfigRootDir: import.meta.dirname
             }

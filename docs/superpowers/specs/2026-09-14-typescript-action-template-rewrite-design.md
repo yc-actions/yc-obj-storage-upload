@@ -147,6 +147,13 @@ message is therefore unreachable today and is not carried forward.
 The fold also moves `new IamTokenService(...)` ahead of `readInputs()`, so it now runs even when a required input is
 missing. Its constructor is pure field assignment — no channel, no network, no I/O — so nothing observable changes.
 
+The final review found one more unreachable branch, fixed in this same branch rather than deferred: `exchangeToken`'s
+`res.status !== 200` check could never run in production, because real axios rejects on 4xx/5xx before that line is
+reached, surfacing a 400 as axios's generic `Request failed with status code 400` instead of the intended
+`Failed to exchange token: 400 Bad Request`. The fix adds `validateStatus: () => true` to the request config so axios
+resolves for every status and the existing check does its job. The characterization snapshot's workload-identity
+scenario stubs a 200 response, so this does not move it.
+
 After the split, `main.ts` holds only: `resolveTokenService`, `readInputs`, `createS3Client`, the optional
 `clearBucket`, `upload`, and the `try/catch` that calls `setFailed`.
 
