@@ -117404,6 +117404,98 @@ module.exports = {
 
 /***/ }),
 
+/***/ 48683:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.readInputs = readInputs;
+const core_1 = __nccwpck_require__(37484);
+const cache_control_1 = __nccwpck_require__(54121);
+const upload_1 = __nccwpck_require__(41550);
+function readInputs() {
+    return {
+        bucket: (0, core_1.getInput)('bucket', { required: true }),
+        prefix: (0, core_1.getInput)('prefix', { required: false }),
+        root: (0, core_1.getInput)('root', { required: true }),
+        include: (0, core_1.getMultilineInput)('include', { required: false }),
+        exclude: (0, core_1.getMultilineInput)('exclude', { required: false }),
+        clear: (0, core_1.getBooleanInput)('clear', { required: false }),
+        cacheControl: (0, cache_control_1.parseCacheControlFormats)((0, core_1.getMultilineInput)('cache-control', { required: false })),
+        concurrency: (0, upload_1.parseConcurrency)((0, core_1.getInput)('concurrency', { required: false })),
+        skipUnchanged: (0, core_1.getBooleanInput)('skip-unchanged', { required: false }),
+        failOnError: (0, core_1.getBooleanInput)('fail-on-error', { required: false })
+    };
+}
+
+
+/***/ }),
+
+/***/ 29081:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.exchangeToken = exchangeToken;
+exports.resolveTokenService = resolveTokenService;
+const core_1 = __nccwpck_require__(37484);
+const iam_token_service_1 = __nccwpck_require__(38786);
+const axios_1 = __importDefault(__nccwpck_require__(87269));
+const service_account_json_1 = __nccwpck_require__(55157);
+async function exchangeToken(token, saId) {
+    (0, core_1.info)(`Exchanging token for service account ${saId}`);
+    const res = await axios_1.default.post('https://auth.yandex.cloud/oauth/token', {
+        grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+        requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+        audience: saId,
+        subject_token: token,
+        subject_token_type: 'urn:ietf:params:oauth:token-type:id_token'
+    }, {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    });
+    if (res.status !== 200) {
+        throw new Error(`Failed to exchange token: ${res.status} ${res.statusText}`);
+    }
+    if (!res.data.access_token) {
+        throw new Error(`Failed to exchange token: ${res.data.error} ${res.data.error_description}`);
+    }
+    (0, core_1.info)(`Token exchanged successfully`);
+    return res.data.access_token;
+}
+async function resolveTokenService(ycSaJsonCredentials, ycIamToken, ycSaId) {
+    if (ycSaJsonCredentials !== '') {
+        const serviceAccountJson = (0, service_account_json_1.fromServiceAccountJsonFile)(JSON.parse(ycSaJsonCredentials));
+        (0, core_1.info)('Parsed Service account JSON');
+        return new iam_token_service_1.IamTokenService(serviceAccountJson);
+    }
+    let iamToken;
+    if (ycIamToken !== '') {
+        iamToken = ycIamToken;
+        (0, core_1.info)('Using IAM token');
+    }
+    else if (ycSaId !== '') {
+        const ghToken = await (0, core_1.getIDToken)();
+        if (!ghToken) {
+            throw new Error('No credentials provided');
+        }
+        iamToken = await exchangeToken(ghToken, ycSaId);
+    }
+    else {
+        throw new Error('No credentials');
+    }
+    return { getToken: async () => iamToken };
+}
+
+
+/***/ }),
+
 /***/ 54121:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -117456,7 +117548,140 @@ function getCacheControlValue(cacheControl, key) {
 
 /***/ }),
 
+/***/ 69989:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.clearBucket = clearBucket;
+const core_1 = __nccwpck_require__(37484);
+const client_s3_1 = __nccwpck_require__(53711);
+async function clearBucket(client, bucket) {
+    (0, core_1.info)('Clearing bucket');
+    const listCommand = new client_s3_1.ListObjectsV2Command({
+        Bucket: bucket,
+        // The default and maximum number of keys returned is 1000.
+        MaxKeys: 1000
+    });
+    let isTruncated = true;
+    let totalDeleted = 0;
+    while (isTruncated) {
+        const { Contents, IsTruncated, NextContinuationToken } = await client.send(listCommand);
+        if (!Contents || Contents.length === 0) {
+            break;
+        }
+        isTruncated = Boolean(IsTruncated);
+        listCommand.input.ContinuationToken = NextContinuationToken;
+        const deleteCommand = new client_s3_1.DeleteObjectsCommand({
+            Bucket: bucket,
+            Delete: {
+                Objects: Contents.map(c => ({ Key: c.Key }))
+            }
+        });
+        const { Deleted } = await client.send(deleteCommand);
+        totalDeleted += Deleted?.length ?? 0;
+    }
+    (0, core_1.info)(`Deleted ${totalDeleted} objects from bucket ${bucket}`);
+}
+
+
+/***/ }),
+
 /***/ 41730:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = run;
+const core_1 = __nccwpck_require__(37484);
+const action_inputs_1 = __nccwpck_require__(48683);
+const auth_1 = __nccwpck_require__(29081);
+const clear_bucket_1 = __nccwpck_require__(69989);
+const s3_client_1 = __nccwpck_require__(63257);
+const upload_1 = __nccwpck_require__(41550);
+async function run() {
+    try {
+        const tokenService = await (0, auth_1.resolveTokenService)((0, core_1.getInput)('yc-sa-json-credentials'), (0, core_1.getInput)('yc-iam-token'), (0, core_1.getInput)('yc-sa-id'));
+        const inputs = (0, action_inputs_1.readInputs)();
+        const s3Client = (0, s3_client_1.createS3Client)(tokenService);
+        if (inputs.clear) {
+            await (0, clear_bucket_1.clearBucket)(s3Client, inputs.bucket);
+        }
+        await (0, upload_1.upload)(s3Client, inputs);
+    }
+    catch (err) {
+        if (err instanceof Error) {
+            (0, core_1.setFailed)(err.message);
+        }
+    }
+}
+
+
+/***/ }),
+
+/***/ 63257:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createS3Client = createS3Client;
+const client_s3_1 = __nccwpck_require__(53711);
+const middleware_flexible_checksums_1 = __nccwpck_require__(29836);
+const protocol_http_1 = __nccwpck_require__(72356);
+function createS3Client(tokenService) {
+    const s3Client = new client_s3_1.S3Client({
+        region: 'ru-central1',
+        endpoint: 'https://storage.yandexcloud.net',
+        requestChecksumCalculation: middleware_flexible_checksums_1.RequestChecksumCalculation.WHEN_REQUIRED,
+        responseChecksumValidation: middleware_flexible_checksums_1.ResponseChecksumValidation.WHEN_REQUIRED
+    });
+    // eslint-disable-next-line  @typescript-eslint/no-explicit-any
+    const middleware = next => {
+        return async (args) => {
+            if (!protocol_http_1.HttpRequest.isInstance(args.request)) {
+                return next(args);
+            }
+            args.request.headers['X-YaCloud-SubjectToken'] = await tokenService.getToken();
+            return next(args);
+        };
+    };
+    s3Client.middlewareStack.removeByTag('HTTP_AUTH_SCHEME');
+    s3Client.middlewareStack.removeByTag('HTTP_SIGNING');
+    s3Client.middlewareStack.addRelativeTo(middleware, {
+        name: 'ycAuthMiddleware',
+        tags: ['YCAUTH'],
+        relation: 'after',
+        toMiddleware: 'retryMiddleware',
+        override: true
+    });
+    return s3Client;
+}
+
+
+/***/ }),
+
+/***/ 55157:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fromServiceAccountJsonFile = fromServiceAccountJsonFile;
+function fromServiceAccountJsonFile(data) {
+    return {
+        accessKeyId: data.id,
+        privateKey: data.private_key,
+        serviceAccountId: data.service_account_id
+    };
+}
+
+
+/***/ }),
+
+/***/ 41550:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -117466,116 +117691,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MAX_CONCURRENCY = exports.DEFAULT_CONCURRENCY = void 0;
-exports.run = run;
 exports.parseConcurrency = parseConcurrency;
 exports.runPool = runPool;
 exports.upload = upload;
-exports.clearBucket = clearBucket;
 const core_1 = __nccwpck_require__(37484);
 const client_s3_1 = __nccwpck_require__(53711);
 const lib_storage_1 = __nccwpck_require__(22358);
-const protocol_http_1 = __nccwpck_require__(72356);
-const iam_token_service_1 = __nccwpck_require__(38786);
 const crypto_1 = __nccwpck_require__(76982);
 const fs_1 = __nccwpck_require__(79896);
 const glob_1 = __nccwpck_require__(8941);
 const mime_types_1 = __importDefault(__nccwpck_require__(14096));
 const minimatch_1 = __nccwpck_require__(46507);
 const node_path_1 = __importDefault(__nccwpck_require__(76760));
-const service_account_json_1 = __nccwpck_require__(55157);
 const cache_control_1 = __nccwpck_require__(54121);
-const middleware_flexible_checksums_1 = __nccwpck_require__(29836);
-const axios_1 = __importDefault(__nccwpck_require__(87269));
-async function run() {
-    try {
-        let sessionConfig = {};
-        const ycSaJsonCredentials = (0, core_1.getInput)('yc-sa-json-credentials');
-        const ycIamToken = (0, core_1.getInput)('yc-iam-token');
-        const ycSaId = (0, core_1.getInput)('yc-sa-id');
-        if (ycSaJsonCredentials !== '') {
-            const serviceAccountJson = (0, service_account_json_1.fromServiceAccountJsonFile)(JSON.parse(ycSaJsonCredentials));
-            (0, core_1.info)('Parsed Service account JSON');
-            sessionConfig = { serviceAccountJson };
-        }
-        else if (ycIamToken !== '') {
-            sessionConfig = { iamToken: ycIamToken };
-            (0, core_1.info)('Using IAM token');
-        }
-        else if (ycSaId !== '') {
-            const ghToken = await (0, core_1.getIDToken)();
-            if (!ghToken) {
-                throw new Error('No credentials provided');
-            }
-            const saToken = await exchangeToken(ghToken, ycSaId);
-            sessionConfig = { iamToken: saToken };
-        }
-        else {
-            throw new Error('No credentials');
-        }
-        const inputs = {
-            bucket: (0, core_1.getInput)('bucket', { required: true }),
-            prefix: (0, core_1.getInput)('prefix', { required: false }),
-            root: (0, core_1.getInput)('root', { required: true }),
-            include: (0, core_1.getMultilineInput)('include', { required: false }),
-            exclude: (0, core_1.getMultilineInput)('exclude', { required: false }),
-            clear: (0, core_1.getBooleanInput)('clear', { required: false }),
-            cacheControl: (0, cache_control_1.parseCacheControlFormats)((0, core_1.getMultilineInput)('cache-control', { required: false })),
-            concurrency: parseConcurrency((0, core_1.getInput)('concurrency', { required: false })),
-            skipUnchanged: (0, core_1.getBooleanInput)('skip-unchanged', { required: false }),
-            failOnError: (0, core_1.getBooleanInput)('fail-on-error', { required: false })
-        };
-        // Initialize Token service with your SA credentials
-        let tokenService;
-        if ('serviceAccountJson' in sessionConfig) {
-            tokenService = new iam_token_service_1.IamTokenService(sessionConfig.serviceAccountJson);
-        }
-        else {
-            tokenService = {
-                getToken: async () => {
-                    const iamToken = sessionConfig.iamToken;
-                    if (!iamToken) {
-                        throw new Error('No IAM token provided');
-                    }
-                    return iamToken;
-                }
-            };
-        }
-        const s3Client = new client_s3_1.S3Client({
-            region: 'ru-central1',
-            endpoint: 'https://storage.yandexcloud.net',
-            requestChecksumCalculation: middleware_flexible_checksums_1.RequestChecksumCalculation.WHEN_REQUIRED,
-            responseChecksumValidation: middleware_flexible_checksums_1.ResponseChecksumValidation.WHEN_REQUIRED
-        });
-        // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-        const middleware = next => {
-            return async (args) => {
-                if (!protocol_http_1.HttpRequest.isInstance(args.request)) {
-                    return next(args);
-                }
-                args.request.headers['X-YaCloud-SubjectToken'] = await tokenService.getToken();
-                return next(args);
-            };
-        };
-        s3Client.middlewareStack.removeByTag('HTTP_AUTH_SCHEME');
-        s3Client.middlewareStack.removeByTag('HTTP_SIGNING');
-        s3Client.middlewareStack.addRelativeTo(middleware, {
-            name: 'ycAuthMiddleware',
-            tags: ['YCAUTH'],
-            relation: 'after',
-            toMiddleware: 'retryMiddleware',
-            override: true
-        });
-        if (inputs.clear) {
-            await clearBucket(s3Client, inputs.bucket);
-        }
-        await upload(s3Client, inputs);
-    }
-    catch (err) {
-        if (err instanceof Error) {
-            (0, core_1.setFailed)(err.message);
-        }
-    }
-}
 exports.DEFAULT_CONCURRENCY = 16;
 exports.MAX_CONCURRENCY = 256;
 function parseConcurrency(raw) {
@@ -117710,73 +117838,6 @@ function parseIgnoreGlobPatterns(patterns) {
     }
     (0, core_1.info)(`Source ignore pattern: "${JSON.stringify(result)}"`);
     return result;
-}
-async function clearBucket(client, bucket) {
-    (0, core_1.info)('Clearing bucket');
-    const listCommand = new client_s3_1.ListObjectsV2Command({
-        Bucket: bucket,
-        // The default and maximum number of keys returned is 1000.
-        MaxKeys: 1000
-    });
-    let isTruncated = true;
-    let totalDeleted = 0;
-    while (isTruncated) {
-        const { Contents, IsTruncated, NextContinuationToken } = await client.send(listCommand);
-        if (!Contents || Contents.length === 0) {
-            break;
-        }
-        isTruncated = Boolean(IsTruncated);
-        listCommand.input.ContinuationToken = NextContinuationToken;
-        const deleteCommand = new client_s3_1.DeleteObjectsCommand({
-            Bucket: bucket,
-            Delete: {
-                Objects: Contents.map(c => ({ Key: c.Key }))
-            }
-        });
-        const { Deleted } = await client.send(deleteCommand);
-        totalDeleted += Deleted?.length ?? 0;
-    }
-    (0, core_1.info)(`Deleted ${totalDeleted} objects from bucket ${bucket}`);
-}
-async function exchangeToken(token, saId) {
-    (0, core_1.info)(`Exchanging token for service account ${saId}`);
-    const res = await axios_1.default.post('https://auth.yandex.cloud/oauth/token', {
-        grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-        requested_token_type: 'urn:ietf:params:oauth:token-type:access_token',
-        audience: saId,
-        subject_token: token,
-        subject_token_type: 'urn:ietf:params:oauth:token-type:id_token'
-    }, {
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-    });
-    if (res.status !== 200) {
-        throw new Error(`Failed to exchange token: ${res.status} ${res.statusText}`);
-    }
-    if (!res.data.access_token) {
-        throw new Error(`Failed to exchange token: ${res.data.error} ${res.data.error_description}`);
-    }
-    (0, core_1.info)(`Token exchanged successfully`);
-    return res.data.access_token;
-}
-
-
-/***/ }),
-
-/***/ 55157:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fromServiceAccountJsonFile = fromServiceAccountJsonFile;
-function fromServiceAccountJsonFile(data) {
-    return {
-        accessKeyId: data.id,
-        privateKey: data.private_key,
-        serviceAccountId: data.service_account_id
-    };
 }
 
 
