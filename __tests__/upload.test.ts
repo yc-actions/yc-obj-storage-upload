@@ -164,8 +164,9 @@ describe('upload', () => {
     // Both `include` and `exclude` are written relative to `root`, so a pattern that
     // contains a slash is anchored at `root` and matches the key the file would get.
     // A slashless pattern still matches the basename at any depth (minimatch's matchBase),
-    // and `**/` still matches anywhere. A leading `./` is not normalized away, so it does
-    // not match — the documented examples do not use that form.
+    // `**/` still matches anywhere, and a leading `./` is stripped so the same string works
+    // in either input. `src.txt` is the negative control: it must match nothing, otherwise
+    // one of the rules above has turned into a catch-all.
     describe.each([
         { pattern: '**/*.txt', excludes: true },
         { pattern: '*.txt', excludes: true },
@@ -173,7 +174,9 @@ describe('upload', () => {
         { pattern: '**/src/*.txt', excludes: true },
         { pattern: 'src/*.txt', excludes: true },
         { pattern: 'src/**', excludes: true },
-        { pattern: './src/*.txt', excludes: false }
+        { pattern: './src/*.txt', excludes: true },
+        { pattern: './*.txt', excludes: true },
+        { pattern: 'src.txt', excludes: false }
     ])('exclude pattern $pattern', ({ pattern, excludes }) => {
         test(`${excludes ? 'drops' : 'does not drop'} src/exclude.txt`, async () => {
             const inputs: UploadInputs = {

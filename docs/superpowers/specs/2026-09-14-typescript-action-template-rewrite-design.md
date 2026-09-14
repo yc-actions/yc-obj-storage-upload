@@ -161,10 +161,15 @@ patterns are now matched against the path relative to `root`** rather than the p
 though `include: src/*` was valid.
 
 The fix matches against `path.relative(root, match)`, which is also the object key the file would receive before
-`prefix` is applied, so `exclude` now filters on exactly what `include` selected. The change is strictly additive for
-patterns that already worked: slashless patterns still match the basename at any depth through minimatch's `matchBase`,
-and `**/`-anchored patterns still match anywhere. Verified pattern by pattern in `__tests__/upload.test.ts`, and the
-characterization snapshot — whose exclude scenario uses `**/*.txt` — does not move.
+`prefix` is applied, so `exclude` now filters on exactly what `include` selected. A leading `./` is stripped from each
+pattern for the same reason: `include` is fed through `path.join`, which drops it, while minimatch does not, so
+`./src/*.txt` used to match nothing while the identical `include` value worked.
+
+The change is strictly additive for patterns that already worked: slashless patterns still match the basename at any
+depth through minimatch's `matchBase`, and `**/`-anchored patterns still match anywhere. Verified pattern by pattern in
+`__tests__/upload.test.ts`, which carries a negative control — a table where every row expects exclusion would still
+pass if the matcher degenerated into a catch-all. The characterization snapshot, whose exclude scenario uses `**/*.txt`,
+does not move.
 
 Joining the pattern with `root` instead, the obvious first idea, was rejected: it gives every pattern a slash, which
 disables `matchBase`, so `*.txt` would stop matching nested files and start meaning "only directly in `root`" — a

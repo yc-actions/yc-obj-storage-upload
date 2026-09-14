@@ -174,9 +174,13 @@ function parseIgnoreGlobPatterns(patterns: string[]): string[] {
     const result: string[] = []
 
     for (const pattern of patterns) {
+        // `include` is fed through path.join, which drops a leading `./`; minimatch does not,
+        // so strip it here too. Otherwise `./src/*.txt` would silently match nothing while the
+        // identical `include` value works.
+        const normalized = pattern?.replace(/^(?:\.\/)+/, '')
         //only not empty patterns
-        if (pattern?.length > 0) {
-            result.push(pattern)
+        if (normalized?.length > 0) {
+            result.push(normalized)
         }
     }
 
