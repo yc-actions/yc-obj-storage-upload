@@ -1,0 +1,37 @@
+# See: https://github.com/DavidAnson/markdownlint
+
+# Unordered list style
+MD004:
+    style: dash
+
+# Line length. Prettier owns wrapping here (printWidth: 120, proseWrap: always), so the
+# limit has to match it or the two tools fight and CI can never be green. Code blocks are
+# exempt because Prettier does not rewrap them.
+MD013:
+    line_length: 120
+    code_blocks: false
+    tables: false
+
+# Nested list indent. Prettier indents by tabWidth, which is 4 in this repo, not the
+# markdownlint default of 2.
+MD007:
+    indent: 4
+
+# `**Table of Contents**` sits above the generated <!-- toc --> block. Promoting it to a
+# real heading would make it show up inside the table of contents it labels.
+MD036: false
+
+# Ordered list item prefix
+MD029:
+    style: one
+
+# Spaces after list markers
+MD030:
+    ul_single: 1
+    ol_single: 1
+    ul_multi: 1
+    ol_multi: 1
+
+# Code block style
+MD046:
+    style: fenced

@@ -1,0 +1,72 @@
+name: Continuous Integration
+
+on:
+    pull_request:
+    push:
+        branches:
+            - main
+
+permissions:
+    contents: read
+
+jobs:
+    test-typescript:
+        name: TypeScript Tests
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              id: checkout
+              uses: actions/checkout@v7
+
+            - name: Setup Node.js
+              id: setup-node
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: .node-version
+                  cache: npm
+
+            - name: Install Dependencies
+              id: npm-ci
+              run: npm ci
+
+            - name: Check Format
+              id: npm-format-check
+              run: npm run format:check
+
+            - name: Lint
+              id: npm-lint
+              run: npm run lint
+
+            - name: Test
+              id: npm-ci-test
+              run: npm run ci-test
+
+    smoke-test:
+        name: Bundle Smoke Test
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              id: checkout
+              uses: actions/checkout@v7
+
+            - name: Setup Node.js
+              id: setup-node
+              uses: actions/setup-node@v7
+              with:
+                  node-version-file: .node-version
+
+            - name: Run the bundle without credentials
+              id: smoke
+              run: |
+                  set +e
+                  output=$(node dist/index.js 2>&1)
+                  status=$?
+                  set -e
+                  echo "$output"
+                  if [ "$status" -eq 0 ]; then
+                    echo "Expected a non-zero exit status, got 0"
+                    exit 1
+                  fi
+                  echo "$output" | grep -q "No credentials"
