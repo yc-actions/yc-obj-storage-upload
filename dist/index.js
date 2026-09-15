@@ -46672,7 +46672,7 @@ var UploadPart$ = [9, n0$4, _UP,
 class CreateSessionCommand extends command$4(_ep4, _mw0$4, "CreateSession", CreateSession$) {
 }
 
-var version$2 = "3.1131.0";
+var version$2 = "3.1132.0";
 var packageInfo$1 = {
 	version: version$2};
 
