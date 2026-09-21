@@ -60,7 +60,7 @@
         "@stylistic/eslint-plugin-ts": "^4.4.1",
         "@types/jest": "^30.0.0",
         "@types/mime-types": "^3.0.1",
-        "@types/node": "25.9.1",
+        "@types/node": "26.6.1",
         "@typescript-eslint/eslint-plugin": "^8.70.0",
         "@typescript-eslint/parser": "^8.70.0",
         "dotenv": "^17.4.2",
