@@ -41,7 +41,7 @@ jobs:
 
             - name: Lint Codebase
               id: super-linter
-              uses: super-linter/super-linter/slim@v8
+              uses: super-linter/super-linter/slim@v9
               env:
                   DEFAULT_BRANCH: main
                   # dist/ is a generated bundle. docs/superpowers/ holds the design spec and
